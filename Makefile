@@ -2,10 +2,10 @@
 
 dev:
 	docker compose up -d
-	go run ./cmd/linkd/
+	go run ./cmd/lnkd/
 
 run:
-	go run ./cmd/linkd/
+	go run ./cmd/lnk/
 
 install:
 	go build -o $(shell go env GOPATH)/bin/lnk ./cmd/lnk/
