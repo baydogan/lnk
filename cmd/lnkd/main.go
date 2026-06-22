@@ -7,12 +7,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/baydogan/lnk/internal/database"
 	"github.com/baydogan/lnk/internal/logger"
 	"github.com/baydogan/lnk/internal/server"
 )
 
 func main() {
 	logger.Setup("debug", false)
+
+	if err := database.Connect("mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin"); err != nil {
+		logger.Fatal().Err(err).Msg("failed to connect to database")
+	}
 
 	router := server.NewRouter()
 
