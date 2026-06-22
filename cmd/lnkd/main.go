@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/baydogan/lnk/internal/container"
 	"github.com/baydogan/lnk/internal/database"
 	"github.com/baydogan/lnk/internal/logger"
 	"github.com/baydogan/lnk/internal/server"
@@ -19,7 +20,9 @@ func main() {
 		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
-	router := server.NewRouter()
+	c := container.New()
+
+	router := server.NewRouter(c.URLHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -42,5 +45,4 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("server forced to shutdown")
 	}
-
 }
