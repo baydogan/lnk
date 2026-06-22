@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/baydogan/lnk/internal/handler"
+	"github.com/baydogan/lnk/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,6 +11,7 @@ func NewRouter(h *handler.URLHandler) *gin.Engine {
 
 	router := gin.New()
 	router.Use(gin.Recovery())
+	router.Use(middleware.Logger())
 
 	router.GET("/health", handler.Health)
 
