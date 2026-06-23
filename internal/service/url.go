@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/repository"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
@@ -13,6 +14,10 @@ type URLService struct {
 
 func NewURLService(repo *repository.URLRepository) *URLService {
 	return &URLService{repo: repo}
+}
+
+func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResponse, error) {
+	return nil, nil
 }
 
 func (s *URLService) generateUniqueCode() (string, error) {

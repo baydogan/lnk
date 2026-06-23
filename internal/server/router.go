@@ -15,7 +15,7 @@ func NewRouter(h *handler.URLHandler) *gin.Engine {
 
 	router.GET("/health", handler.Health)
 
-	api := router.Group("/api")
+	api := router.Group("/api/v1")
 	{
 		api.POST("/shorten", h.ShortenURL)
 		api.GET("/:code", h.RedirectURL)
