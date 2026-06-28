@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/baydogan/lnk/internal/models"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -13,14 +14,6 @@ const (
 	defaultRedisAddr = "localhost:6379"
 )
 
-type ServerConfig struct {
-	Mode            string // "single" | "multi"
-	AdminUser       string
-	MongoURI        string
-	RedisAddr       string
-	ConfigureClient bool
-}
-
 type Provided struct {
 	Mode  bool
 	Admin bool
@@ -28,7 +21,12 @@ type Provided struct {
 	Redis bool
 }
 
-func Run(cfg *ServerConfig, p Provided) error {
+func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
+	// A mode supplied via flag bypasses the select, so validate it here; the
+	// interactive picker can only ever yield a valid value.
+	if p.Mode && cfg.Mode != "single" && cfg.Mode != "multi" {
+		return false, fmt.Errorf("invalid mode %q: must be \"single\" or \"multi\"", cfg.Mode)
+	}
 	if !p.Mode && cfg.Mode == "" {
 		cfg.Mode = "single"
 	}
@@ -38,6 +36,8 @@ func Run(cfg *ServerConfig, p Provided) error {
 	if !p.Redis && cfg.RedisAddr == "" {
 		cfg.RedisAddr = defaultRedisAddr
 	}
+
+	var configureClient bool
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -56,7 +56,7 @@ func Run(cfg *ServerConfig, p Provided) error {
 				Title("Admin username").
 				Description("Owner of the first API key.").
 				Placeholder("admin").
-				Value(&cfg.AdminUser).
+				Value(&cfg.Admin).
 				Validate(required("admin username")),
 		).WithHideFunc(func() bool { return p.Admin || cfg.Mode != "multi" }),
 
@@ -82,24 +82,58 @@ func Run(cfg *ServerConfig, p Provided) error {
 				Description("Writes ~/.lnk/config.yaml for this machine so you\ncan use lnk here without copy-pasting the admin key.").
 				Affirmative("Yes, set it up").
 				Negative("No, remote only").
-				Value(&cfg.ConfigureClient),
+				Value(&configureClient),
 		).WithHideFunc(func() bool { return cfg.Mode != "multi" }),
 	).WithTheme(Theme()).WithShowHelp(true)
 
-	fmt.Println(banner())
+	// Only prompt when at least one group is visible. When every value arrives
+	// via flags, there is nothing to ask, so we skip the form entirely — this
+	// lets CI / Docker run `lnkd init` non-interactively (no TTY required).
+	hasPrompts := !p.Mode ||
+		(!p.Admin && cfg.Mode == "multi") ||
+		!p.Mongo ||
+		!p.Redis ||
+		cfg.Mode == "multi"
 
-	if err := form.Run(); err != nil {
-		return err
+	if hasPrompts {
+		fmt.Println(banner())
+
+		if err := form.Run(); err != nil {
+			return false, err
+		}
 	}
 
+	// Single-user always configures the local client.
 	if cfg.Mode != "multi" {
-		cfg.ConfigureClient = true
+		configureClient = true
 	}
 
-	return nil
+	return configureClient, nil
 }
 
-func Summary(cfg *ServerConfig) {
+// ConfirmOverwrite asks whether to overwrite an existing config file at path.
+// It uses the same theme as the wizard for a consistent look.
+func ConfirmOverwrite(path string) (bool, error) {
+	var overwrite bool
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Config already exists").
+				Description(fmt.Sprintf("%s already exists.\nOverwrite it with the new configuration?", path)).
+				Affirmative("Yes, overwrite").
+				Negative("No, keep it").
+				Value(&overwrite),
+		),
+	).WithTheme(Theme()).WithShowHelp(true)
+
+	if err := form.Run(); err != nil {
+		return false, err
+	}
+	return overwrite, nil
+}
+
+func Summary(cfg *models.ServerConfig, configureClient bool) {
 	label := lipgloss.NewStyle().Foreground(subtle).Width(8)
 	val := lipgloss.NewStyle().Foreground(text).Bold(true)
 
@@ -109,9 +143,9 @@ func Summary(cfg *ServerConfig) {
 		label.Render("redis") + val.Render(cfg.RedisAddr),
 	}
 	if cfg.Mode == "multi" {
-		rows = append(rows, label.Render("admin")+val.Render(cfg.AdminUser))
+		rows = append(rows, label.Render("admin")+val.Render(cfg.Admin))
 	}
-	rows = append(rows, label.Render("client")+val.Render(yesno(cfg.ConfigureClient)))
+	rows = append(rows, label.Render("client")+val.Render(yesno(configureClient)))
 
 	title := lipgloss.NewStyle().Foreground(neon).Bold(true).Render("✔ configuration ready")
 	card := lipgloss.NewStyle().
@@ -121,6 +155,22 @@ func Summary(cfg *ServerConfig) {
 		Render(title + "\n\n" + strings.Join(rows, "\n"))
 
 	fmt.Println(card)
+}
+
+// Saved prints a styled confirmation that a config file was written to path.
+func Saved(label, path string) {
+	mark := lipgloss.NewStyle().Foreground(neon).Bold(true).Render("✔")
+	desc := lipgloss.NewStyle().Foreground(subtle).Render(label)
+	loc := lipgloss.NewStyle().Foreground(violet).Bold(true).Render(path)
+	fmt.Println(mark + " " + desc + " " + loc)
+}
+
+// Kept prints a styled note that an existing config file was left untouched.
+func Kept(label, path string) {
+	dot := lipgloss.NewStyle().Foreground(faint).Render("•")
+	desc := lipgloss.NewStyle().Foreground(subtle).Render(label)
+	loc := lipgloss.NewStyle().Foreground(violet).Render(path)
+	fmt.Println(dot + " " + desc + " " + loc)
 }
 
 func banner() string {

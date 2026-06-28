@@ -1,6 +1,7 @@
 package lnkd
 
 import (
+	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/setup"
 	"github.com/spf13/cobra"
 )
@@ -10,9 +11,9 @@ var initCmd = &cobra.Command{
 	Short: "Interactively configure the lnk server",
 	Long:  "Launches a TUI wizard that picks the deployment mode and writes server config.\nAny value passed as a flag is used directly and not prompted.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := &setup.ServerConfig{}
+		cfg := &models.ServerConfig{}
 		cfg.Mode, _ = cmd.Flags().GetString("mode")
-		cfg.AdminUser, _ = cmd.Flags().GetString("admin")
+		cfg.Admin, _ = cmd.Flags().GetString("admin")
 		cfg.MongoURI, _ = cmd.Flags().GetString("mongo-uri")
 		cfg.RedisAddr, _ = cmd.Flags().GetString("redis-addr")
 
@@ -23,13 +24,36 @@ var initCmd = &cobra.Command{
 			Redis: cmd.Flags().Changed("redis-addr"),
 		}
 
-		if err := setup.Run(cfg, p); err != nil {
+		configureClient, err := setup.Run(cfg, p)
+		if err != nil {
 			return err
 		}
 
-		setup.Summary(cfg)
-		// TODO: persist cfg to ~/.lnk/server.yaml and, when ConfigureClient,
-		// write ~/.lnk/config.yaml with the generated admin key.
+		path, exists, err := setup.ServerConfigExists()
+		if err != nil {
+			return err
+		}
+		if exists {
+			overwrite, err := setup.ConfirmOverwrite(path)
+			if err != nil {
+				return err
+			}
+			if !overwrite {
+				setup.Kept("kept existing server config at", path)
+				return nil
+			}
+		}
+
+		written, err := setup.WriteServerConfig(cfg)
+		if err != nil {
+			return err
+		}
+
+		setup.Summary(cfg, configureClient)
+		setup.Saved("server config written to", written)
+
+		// TODO: when configureClient, write ~/.lnk/config.yaml with the
+		// generated admin key.
 		return nil
 	},
 }
