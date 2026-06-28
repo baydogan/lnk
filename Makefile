@@ -9,3 +9,4 @@ run:
 
 install:
 	go build -o $(shell go env GOPATH)/bin/lnk ./cmd/lnk/
+	go build -o $(shell go env GOPATH)/bin/lnkd ./cmd/lnkd/
