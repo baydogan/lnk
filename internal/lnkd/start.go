@@ -3,6 +3,7 @@ package lnkd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -36,12 +37,21 @@ func runServer() {
 
 	c := container.New()
 
-	router := server.NewRouter(c.URLHandler)
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	pt, created, err := c.AuthService.EnsureAdminKey()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to ensure admin key")
+	}
+
+	if created {
+		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server http://localhost:%s --api-key %s\n\n", port, pt)
+	}
+
+	router := server.NewRouter(c.URLHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

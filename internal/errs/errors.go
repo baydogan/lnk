@@ -11,4 +11,5 @@ var (
 	ErrExpireFormat   = errors.New("invalid expire format (use: 1h, 7d, 30d)")
 	ErrConfigNotFound = errors.New("config not found")
 	ErrNotLoggedIn    = errors.New("not logged in")
+	ErrInvalidKey     = errors.New("invalid key")
 )
