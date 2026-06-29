@@ -27,6 +27,10 @@ func Run() error {
 
 	c := container.New(cfg)
 
+	if err := c.AuthService.EnsureIndexes(context.Background()); err != nil {
+		logger.Fatal().Err(err).Msg("failed to ensure indexes")
+	}
+
 	pt, created, err := c.AuthService.EnsureAdminKey()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure admin key")

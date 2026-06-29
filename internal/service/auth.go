@@ -1,11 +1,14 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 
+	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/repository"
 )
@@ -47,7 +50,14 @@ func (s *AuthService) EnsureAdminKey() (plaintext string, created bool, err erro
 		return "", false, err
 	}
 	if err := s.keys.Create(&models.APIKey{KeyHash: hash, Prefix: prefix}); err != nil {
+		if errors.Is(err, errs.ErrAlreadyExists) {
+			return "", false, nil
+		}
 		return "", false, err
 	}
 	return pt, true, nil
+}
+
+func (s *AuthService) EnsureIndexes(ctx context.Context) error {
+	return s.keys.EnsureIndexes(ctx)
 }
