@@ -10,12 +10,32 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: lnk-redis
     ports:
       - "6379:6379"
+
+  lnkd:
+    build: .
+    container_name: lnk-server
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      PORT: "8080"
+      MONGO_URI: "mongodb://lnk:lnk@mongodb:27017/lnk?authSource=admin"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   mongodata:

@@ -1,4 +1,4 @@
-package lnkd
+package server
 
 import (
 	"context"
@@ -11,36 +11,22 @@ import (
 	"github.com/baydogan/lnk/internal/container"
 	"github.com/baydogan/lnk/internal/database"
 	"github.com/baydogan/lnk/internal/logger"
-	"github.com/baydogan/lnk/internal/server"
-	"github.com/spf13/cobra"
 )
 
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start the lnk server",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		runServer()
-		return nil
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(startCmd)
-}
-
-func runServer() {
+// Run boots the lnk server: connects the database, bootstraps the admin key on
+// first run, and serves until shutdown. It owns the full server lifecycle so
+// the CLI layer only has to invoke it.
+func Run() error {
 	logger.Setup("debug", false)
 
-	if err := database.Connect("mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin"); err != nil {
+	mongoURI := getenv("MONGO_URI", "mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin")
+	port := getenv("PORT", "8080")
+
+	if err := database.Connect(mongoURI); err != nil {
 		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
 	c := container.New()
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
 
 	pt, created, err := c.AuthService.EnsureAdminKey()
 	if err != nil {
@@ -51,7 +37,7 @@ func runServer() {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server http://localhost:%s --api-key %s\n\n", port, pt)
 	}
 
-	router := server.NewRouter(c.URLHandler)
+	router := NewRouter(c.URLHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -69,4 +55,14 @@ func runServer() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("server forced to shutdown")
 	}
+
+	return nil
+}
+
+// getenv returns the env var for key, or def when it is unset/empty.
+func getenv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }

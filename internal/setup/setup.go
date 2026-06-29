@@ -10,15 +10,17 @@ import (
 )
 
 const (
+	defaultBaseURL   = "http://localhost:8080"
 	defaultMongoURI  = "mongodb://localhost:27017/lnk"
 	defaultRedisAddr = "localhost:6379"
 )
 
 type Provided struct {
-	Mode  bool
-	Admin bool
-	Mongo bool
-	Redis bool
+	Mode    bool
+	BaseURL bool
+	Admin   bool
+	Mongo   bool
+	Redis   bool
 }
 
 func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
@@ -29,6 +31,9 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 	}
 	if !p.Mode && cfg.Mode == "" {
 		cfg.Mode = "single"
+	}
+	if !p.BaseURL && cfg.BaseURL == "" {
+		cfg.BaseURL = defaultBaseURL
 	}
 	if !p.Mongo && cfg.MongoURI == "" {
 		cfg.MongoURI = defaultMongoURI
@@ -50,6 +55,15 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 				).
 				Value(&cfg.Mode),
 		).WithHideFunc(func() bool { return p.Mode }),
+
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Public base URL").
+				Description("Origin used in generated short links, e.g. https://shorturl.com").
+				Placeholder(defaultBaseURL).
+				Value(&cfg.BaseURL).
+				Validate(required("public base URL")),
+		).WithHideFunc(func() bool { return p.BaseURL }),
 
 		huh.NewGroup(
 			huh.NewInput().
@@ -90,6 +104,7 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 	// via flags, there is nothing to ask, so we skip the form entirely — this
 	// lets CI / Docker run `lnkd init` non-interactively (no TTY required).
 	hasPrompts := !p.Mode ||
+		!p.BaseURL ||
 		(!p.Admin && cfg.Mode == "multi") ||
 		!p.Mongo ||
 		!p.Redis ||
@@ -139,6 +154,7 @@ func Summary(cfg *models.ServerConfig, configureClient bool) {
 
 	rows := []string{
 		label.Render("mode") + val.Render(cfg.Mode),
+		label.Render("url") + val.Render(cfg.BaseURL),
 		label.Render("mongo") + val.Render(cfg.MongoURI),
 		label.Render("redis") + val.Render(cfg.RedisAddr),
 	}

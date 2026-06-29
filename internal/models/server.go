@@ -2,6 +2,7 @@ package models
 
 type ServerConfig struct {
 	Mode      string `yaml:"mode"`
+	BaseURL   string `yaml:"base_url"` // public origin, e.g. https://shorturl.com
 	MongoURI  string `yaml:"mongo_uri"`
 	RedisAddr string `yaml:"redis_addr"`
 	Admin     string `yaml:"admin,omitempty"`

@@ -1,4 +1,4 @@
-package lnkd
+package cli
 
 import (
 	"github.com/baydogan/lnk/internal/models"
@@ -13,15 +13,17 @@ var initCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := &models.ServerConfig{}
 		cfg.Mode, _ = cmd.Flags().GetString("mode")
+		cfg.BaseURL, _ = cmd.Flags().GetString("base-url")
 		cfg.Admin, _ = cmd.Flags().GetString("admin")
 		cfg.MongoURI, _ = cmd.Flags().GetString("mongo-uri")
 		cfg.RedisAddr, _ = cmd.Flags().GetString("redis-addr")
 
 		p := setup.Provided{
-			Mode:  cmd.Flags().Changed("mode"),
-			Admin: cmd.Flags().Changed("admin"),
-			Mongo: cmd.Flags().Changed("mongo-uri"),
-			Redis: cmd.Flags().Changed("redis-addr"),
+			Mode:    cmd.Flags().Changed("mode"),
+			BaseURL: cmd.Flags().Changed("base-url"),
+			Admin:   cmd.Flags().Changed("admin"),
+			Mongo:   cmd.Flags().Changed("mongo-uri"),
+			Redis:   cmd.Flags().Changed("redis-addr"),
 		}
 
 		configureClient, err := setup.Run(cfg, p)
@@ -60,6 +62,7 @@ var initCmd = &cobra.Command{
 
 func init() {
 	initCmd.Flags().String("mode", "", "deployment mode: single | multi")
+	initCmd.Flags().String("base-url", "", "public base URL for short links, e.g. https://shorturl.com")
 	initCmd.Flags().String("admin", "", "admin username (multi-user)")
 	initCmd.Flags().String("mongo-uri", "", "MongoDB connection URI")
 	initCmd.Flags().String("redis-addr", "", "Redis address")
