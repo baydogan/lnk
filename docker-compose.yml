@@ -35,6 +35,7 @@ services:
       LNK_SERVER_CONFIG: /etc/lnk/server.yaml
       MONGO_URI: "mongodb://lnk:lnk@mongodb:27017/lnk?authSource=admin"
       REDIS_ADDR: "redis:6379"
+      BASE_URL: "${BASE_URL:-}"
     volumes:
       - ${HOME}/.lnk:/etc/lnk:ro
     ports:
