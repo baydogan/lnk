@@ -1,4 +1,4 @@
-package setup
+package config
 
 import (
 	"errors"
@@ -12,14 +12,12 @@ import (
 const (
 	configDirName  = ".lnk"
 	serverFileName = "server.yaml"
+
+	envConfigPath = "LNK_SERVER_CONFIG"
 )
 
-func GetUserHomeDir() (string, error) {
-	return os.UserHomeDir()
-}
-
 func ConfigDir() (string, error) {
-	home, err := GetUserHomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
@@ -27,6 +25,9 @@ func ConfigDir() (string, error) {
 }
 
 func ServerConfigPath() (string, error) {
+	if p := os.Getenv(envConfigPath); p != "" {
+		return p, nil
+	}
 	dir, err := ConfigDir()
 	if err != nil {
 		return "", err
@@ -34,7 +35,6 @@ func ServerConfigPath() (string, error) {
 	return filepath.Join(dir, serverFileName), nil
 }
 
-// ServerConfigExists reports whether server.yaml already exists, along with its path.
 func ServerConfigExists() (string, bool, error) {
 	path, err := ServerConfigPath()
 	if err != nil {
@@ -49,12 +49,31 @@ func ServerConfigExists() (string, bool, error) {
 	return path, true, nil
 }
 
+func ReadServerConfig() (models.ServerConfig, bool, error) {
+	var cfg models.ServerConfig
+	path, err := ServerConfigPath()
+	if err != nil {
+		return cfg, false, err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return cfg, false, nil
+		}
+		return cfg, false, err
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return cfg, false, err
+	}
+	return cfg, true, nil
+}
+
 func WriteServerConfig(cfg *models.ServerConfig) (string, error) {
-	dir, err := ConfigDir()
+	path, err := ServerConfigPath()
 	if err != nil {
 		return "", err
 	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return "", err
 	}
 
@@ -63,10 +82,8 @@ func WriteServerConfig(cfg *models.ServerConfig) (string, error) {
 		return "", err
 	}
 
-	path := filepath.Join(dir, serverFileName)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return "", err
 	}
-
 	return path, nil
 }

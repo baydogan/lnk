@@ -13,11 +13,12 @@ import (
 )
 
 type URLService struct {
-	repo *repository.URLRepository
+	repo    *repository.URLRepository
+	baseURL string
 }
 
-func NewURLService(repo *repository.URLRepository) *URLService {
-	return &URLService{repo: repo}
+func NewURLService(repo *repository.URLRepository, baseURL string) *URLService {
+	return &URLService{repo: repo, baseURL: baseURL}
 }
 
 func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResponse, error) {
@@ -76,11 +77,9 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 		Str("original_url", url).
 		Msg("URL shortened")
 
-	baseURL := "example.com"
-
 	return &models.ShortenResponse{
 		Code:        code,
-		ShortURL:    fmt.Sprintf("%s/%s", baseURL, shortCode),
+		ShortURL:    fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), shortCode),
 		OriginalURL: url,
 	}, nil
 }

@@ -1,16 +1,17 @@
-.PHONY: dev up down install run
+.PHONY: dev up down reset install run
 
-# Local code against containerized deps (fast iteration loop).
 dev:
 	docker compose up -d mongodb redis
 	go run ./cmd/lnkd/
 
-# Full stack in containers, rebuilding the lnkd image.
 up:
 	docker compose up -d --build
 
 down:
 	docker compose down
+
+reset:
+	docker compose down -v
 
 run:
 	go run ./cmd/lnk/

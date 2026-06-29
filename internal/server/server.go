@@ -8,25 +8,24 @@ import (
 	"os"
 	"time"
 
+	"github.com/baydogan/lnk/internal/config"
 	"github.com/baydogan/lnk/internal/container"
 	"github.com/baydogan/lnk/internal/database"
 	"github.com/baydogan/lnk/internal/logger"
+	"github.com/baydogan/lnk/internal/models"
 )
 
-// Run boots the lnk server: connects the database, bootstraps the admin key on
-// first run, and serves until shutdown. It owns the full server lifecycle so
-// the CLI layer only has to invoke it.
 func Run() error {
 	logger.Setup("debug", false)
 
-	mongoURI := getenv("MONGO_URI", "mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin")
+	cfg := loadConfig()
 	port := getenv("PORT", "8080")
 
-	if err := database.Connect(mongoURI); err != nil {
+	if err := database.Connect(cfg.MongoURI); err != nil {
 		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
-	c := container.New()
+	c := container.New(cfg)
 
 	pt, created, err := c.AuthService.EnsureAdminKey()
 	if err != nil {
@@ -34,7 +33,7 @@ func Run() error {
 	}
 
 	if created {
-		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server http://localhost:%s --api-key %s\n\n", port, pt)
+		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
 	router := NewRouter(c.URLHandler)
@@ -59,7 +58,34 @@ func Run() error {
 	return nil
 }
 
-// getenv returns the env var for key, or def when it is unset/empty.
+func loadConfig() models.ServerConfig {
+	cfg, _, err := config.ReadServerConfig()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to read server config")
+	}
+
+	if v := os.Getenv("MONGO_URI"); v != "" {
+		cfg.MongoURI = v
+	}
+	if v := os.Getenv("REDIS_ADDR"); v != "" {
+		cfg.RedisAddr = v
+	}
+	if v := os.Getenv("BASE_URL"); v != "" {
+		cfg.BaseURL = v
+	}
+	if v := os.Getenv("MODE"); v != "" {
+		cfg.Mode = v
+	}
+
+	if cfg.MongoURI == "" {
+		cfg.MongoURI = "mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin"
+	}
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = "http://localhost:8080"
+	}
+	return cfg
+}
+
 func getenv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

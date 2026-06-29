@@ -32,7 +32,11 @@ services:
         condition: service_started
     environment:
       PORT: "8080"
+      LNK_SERVER_CONFIG: /etc/lnk/server.yaml
       MONGO_URI: "mongodb://lnk:lnk@mongodb:27017/lnk?authSource=admin"
+      REDIS_ADDR: "redis:6379"
+    volumes:
+      - ${HOME}/.lnk:/etc/lnk:ro
     ports:
       - "8080:8080"
     restart: unless-stopped

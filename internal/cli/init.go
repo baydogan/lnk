@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/baydogan/lnk/internal/config"
 	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/setup"
 	"github.com/spf13/cobra"
@@ -31,7 +32,7 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		path, exists, err := setup.ServerConfigExists()
+		path, exists, err := config.ServerConfigExists()
 		if err != nil {
 			return err
 		}
@@ -46,7 +47,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		written, err := setup.WriteServerConfig(cfg)
+		written, err := config.WriteServerConfig(cfg)
 		if err != nil {
 			return err
 		}

@@ -11,8 +11,8 @@ import (
 
 const (
 	defaultBaseURL   = "http://localhost:8080"
-	defaultMongoURI  = "mongodb://localhost:27017/lnk"
-	defaultRedisAddr = "localhost:6379"
+	defaultMongoURI  = "mongodb://lnk:lnk@mongodb:27017/lnk?authSource=admin"
+	defaultRedisAddr = "redis:6379"
 )
 
 type Provided struct {
@@ -24,8 +24,6 @@ type Provided struct {
 }
 
 func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
-	// A mode supplied via flag bypasses the select, so validate it here; the
-	// interactive picker can only ever yield a valid value.
 	if p.Mode && cfg.Mode != "single" && cfg.Mode != "multi" {
 		return false, fmt.Errorf("invalid mode %q: must be \"single\" or \"multi\"", cfg.Mode)
 	}
@@ -100,9 +98,6 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 		).WithHideFunc(func() bool { return cfg.Mode != "multi" }),
 	).WithTheme(Theme()).WithShowHelp(true)
 
-	// Only prompt when at least one group is visible. When every value arrives
-	// via flags, there is nothing to ask, so we skip the form entirely — this
-	// lets CI / Docker run `lnkd init` non-interactively (no TTY required).
 	hasPrompts := !p.Mode ||
 		!p.BaseURL ||
 		(!p.Admin && cfg.Mode == "multi") ||
@@ -126,8 +121,6 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 	return configureClient, nil
 }
 
-// ConfirmOverwrite asks whether to overwrite an existing config file at path.
-// It uses the same theme as the wizard for a consistent look.
 func ConfirmOverwrite(path string) (bool, error) {
 	var overwrite bool
 
@@ -173,7 +166,6 @@ func Summary(cfg *models.ServerConfig, configureClient bool) {
 	fmt.Println(card)
 }
 
-// Saved prints a styled confirmation that a config file was written to path.
 func Saved(label, path string) {
 	mark := lipgloss.NewStyle().Foreground(neon).Bold(true).Render("✔")
 	desc := lipgloss.NewStyle().Foreground(subtle).Render(label)
@@ -181,7 +173,6 @@ func Saved(label, path string) {
 	fmt.Println(mark + " " + desc + " " + loc)
 }
 
-// Kept prints a styled note that an existing config file was left untouched.
 func Kept(label, path string) {
 	dot := lipgloss.NewStyle().Foreground(faint).Render("•")
 	desc := lipgloss.NewStyle().Foreground(subtle).Render(label)
