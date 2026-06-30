@@ -21,6 +21,7 @@ type URL struct {
 type URLResponse struct {
 	ID          bson.ObjectID  `json:"id"`
 	Code        string         `json:"code"`
+	ShortURL    string         `json:"short_url"`
 	OriginalURL string         `json:"original_url"`
 	UserID      *bson.ObjectID `json:"user_id,omitempty"`
 	ClickCount  int            `json:"click_count"`

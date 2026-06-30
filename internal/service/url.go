@@ -106,7 +106,13 @@ func (s *URLService) ListURLs() ([]models.URLResponse, error) {
 	}
 	out := make([]models.URLResponse, 0, len(urls))
 	for i := range urls {
-		out = append(out, urls[i].ToResponse())
+		r := urls[i].ToResponse()
+		shortCode := urls[i].Code
+		if urls[i].Alias != nil {
+			shortCode = *urls[i].Alias
+		}
+		r.ShortURL = fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), shortCode)
+		out = append(out, r)
 	}
 	return out, nil
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/service"
@@ -35,7 +36,17 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 }
 
 func (h *URLHandler) RedirectURL(c *gin.Context) {
-	target, err := h.svc.ResolveURL(c.Param("code"))
+	if c.Request.Method != http.MethodGet {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	code := strings.Trim(c.Request.URL.Path, "/")
+	if code == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+
+	target, err := h.svc.ResolveURL(code)
 	if err != nil {
 		respondError(c, err)
 		return
