@@ -70,3 +70,12 @@ func (h *URLHandler) ListURLs(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, urls)
 }
+
+func (h *URLHandler) StatsURL(c *gin.Context) {
+	u, err := h.svc.GetURL(c.Param("code"))
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, u)
+}

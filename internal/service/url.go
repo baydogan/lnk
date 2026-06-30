@@ -107,14 +107,28 @@ func (s *URLService) ListURLs() ([]models.URLResponse, error) {
 	out := make([]models.URLResponse, 0, len(urls))
 	for i := range urls {
 		r := urls[i].ToResponse()
-		shortCode := urls[i].Code
-		if urls[i].Alias != nil {
-			shortCode = *urls[i].Alias
-		}
-		r.ShortURL = fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), shortCode)
+		r.ShortURL = s.shortURL(&urls[i])
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+func (s *URLService) GetURL(codeOrAlias string) (*models.URLResponse, error) {
+	u, err := s.repo.GetByCodeOrAlias(codeOrAlias)
+	if err != nil {
+		return nil, err
+	}
+	r := u.ToResponse()
+	r.ShortURL = s.shortURL(u)
+	return &r, nil
+}
+
+func (s *URLService) shortURL(u *models.URL) string {
+	code := u.Code
+	if u.Alias != nil {
+		code = *u.Alias
+	}
+	return fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), code)
 }
 
 func (s *URLService) DeleteURL(codeOrAlias string) error {

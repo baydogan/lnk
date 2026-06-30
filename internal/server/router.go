@@ -20,9 +20,9 @@ func NewRouter(h *handler.URLHandler) *gin.Engine {
 		api.POST("/shorten", h.ShortenURL)
 		api.DELETE("/:code", h.DeleteURL)
 		api.GET("/urls", h.ListURLs)
+		api.GET("/urls/:code", h.StatsURL)
 	}
 
-	// Public redirect: any unmatched root path is a short code/alias.
 	router.NoRoute(h.RedirectURL)
 
 	return router
