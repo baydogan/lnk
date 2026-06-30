@@ -13,6 +13,7 @@ import (
 var (
 	shortenAlias   string
 	shortenExpires string
+	shortenQR      bool
 )
 
 var shortenCmd = &cobra.Command{
@@ -34,11 +35,7 @@ var shortenCmd = &cobra.Command{
 		}
 
 		if status != http.StatusCreated {
-			var errResp map[string]string
-			if err := json.Unmarshal(body, &errResp); err != nil {
-				return fmt.Errorf("server error (status %d): %w", status, err)
-			}
-			return fmt.Errorf(errResp["error"])
+			return apiError(body, status)
 		}
 
 		var resp models.ShortenResponse
@@ -47,6 +44,15 @@ var shortenCmd = &cobra.Command{
 		}
 
 		fmt.Printf("✓ %s\n", resp.ShortURL)
+		if shortenQR {
+			printTerminalQR(resp.ShortURL)
+		}
 		return nil
 	},
+}
+
+func init() {
+	shortenCmd.Flags().StringVar(&shortenAlias, "alias", "", "custom alias (path) for the short link")
+	shortenCmd.Flags().StringVar(&shortenExpires, "expires", "", "expiry, e.g. 7d (not enforced yet)")
+	shortenCmd.Flags().BoolVar(&shortenQR, "qr", false, "also print a QR code for the short link")
 }
