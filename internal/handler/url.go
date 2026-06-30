@@ -34,8 +34,28 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 }
 
-func (h *URLHandler) RedirectURL(c *gin.Context) {}
+func (h *URLHandler) RedirectURL(c *gin.Context) {
+	target, err := h.svc.ResolveURL(c.Param("code"))
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.Redirect(http.StatusFound, target)
+}
 
-func (h *URLHandler) DeleteURL(c *gin.Context) {}
+func (h *URLHandler) DeleteURL(c *gin.Context) {
+	if err := h.svc.DeleteURL(c.Param("code")); err != nil {
+		respondError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
 
-func (h *URLHandler) ListURLs(c *gin.Context) {}
+func (h *URLHandler) ListURLs(c *gin.Context) {
+	urls, err := h.svc.ListURLs()
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, urls)
+}

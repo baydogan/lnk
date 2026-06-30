@@ -41,6 +41,20 @@ func (r *URLRepository) GetURLByCode(code string) (*models.URL, error) {
 	return &url, err
 }
 
+func (r *URLRepository) GetByCodeOrAlias(s string) (*models.URL, error) {
+	var url models.URL
+	err := r.col.FindOne(context.Background(), bson.M{
+		"$or": bson.A{
+			bson.M{"code": s},
+			bson.M{"alias": s},
+		},
+	}).Decode(&url)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, errs.ErrNotFound
+	}
+	return &url, err
+}
+
 func (r *URLRepository) IncrementClickCount(code string) error {
 	_, err := r.col.UpdateOne(
 		context.Background(),

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/logger"
@@ -82,6 +83,36 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 		ShortURL:    fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), shortCode),
 		OriginalURL: url,
 	}, nil
+}
+
+func (s *URLService) ResolveURL(codeOrAlias string) (string, error) {
+	u, err := s.repo.GetByCodeOrAlias(codeOrAlias)
+	if err != nil {
+		return "", err
+	}
+	if u.ExpiresAt != nil && time.Now().After(*u.ExpiresAt) {
+		return "", errs.ErrNotFound
+	}
+	if err := s.repo.IncrementClickCount(u.Code); err != nil {
+		logger.Error().Err(err).Str("code", u.Code).Msg("click increment failed")
+	}
+	return u.OriginalURL, nil
+}
+
+func (s *URLService) ListURLs() ([]models.URLResponse, error) {
+	urls, err := s.repo.GetAllURLs()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]models.URLResponse, 0, len(urls))
+	for i := range urls {
+		out = append(out, urls[i].ToResponse())
+	}
+	return out, nil
+}
+
+func (s *URLService) DeleteURL(codeOrAlias string) error {
+	return s.repo.DeleteByCode(codeOrAlias)
 }
 
 func (s *URLService) generateUniqueCode() (string, error) {
