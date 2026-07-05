@@ -41,7 +41,7 @@ var lsCmd = &cobra.Command{
 			rows = append(rows, []string{
 				u.ShortURL,
 				fmt.Sprintf("%d", u.ClickCount),
-				u.CreatedAt.Format("2006-01-02"),
+				u.CreatedAt.Local().Format("2006-01-02"),
 				u.OriginalURL,
 			})
 		}

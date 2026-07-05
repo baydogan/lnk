@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,14 +46,15 @@ func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest)
 		}
 	}
 
-	code, err := s.generateUniqueCode(ctx)
-
+	expiresAt, err := parseExpiry(req.Expires)
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO parse
-	//var expiresAt time.Time
+	code, err := s.generateUniqueCode(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var alias *string
 	if req.Alias != "" {
@@ -63,6 +65,7 @@ func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest)
 		Code:        code,
 		OriginalURL: url,
 		Alias:       alias,
+		ExpiresAt:   expiresAt,
 	}
 
 	if err := s.repo.CreateURL(ctx, urlModel); err != nil {
@@ -153,4 +156,38 @@ func (s *URLService) generateUniqueCode(ctx context.Context) (string, error) {
 	}
 
 	return "", errors.New("failed to generate unique code after 5 attempts")
+}
+
+// parseExpiry turns a relative TTL like "1h", "30m", "7d", "2w" into an absolute
+// time.Time (now + duration). Empty string means no expiry. Days ("d") and weeks
+// ("w") are handled here since time.ParseDuration doesn't support them; everything
+// else (s/m/h and combinations) delegates to time.ParseDuration.
+func parseExpiry(s string) (*time.Time, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, nil
+	}
+
+	var d time.Duration
+	switch last := s[len(s)-1]; last {
+	case 'd', 'w':
+		n, err := strconv.Atoi(s[:len(s)-1])
+		if err != nil || n <= 0 {
+			return nil, errs.ErrExpireFormat
+		}
+		unit := 24 * time.Hour
+		if last == 'w' {
+			unit = 7 * 24 * time.Hour
+		}
+		d = time.Duration(n) * unit
+	default:
+		parsed, err := time.ParseDuration(s)
+		if err != nil || parsed <= 0 {
+			return nil, errs.ErrExpireFormat
+		}
+		d = parsed
+	}
+
+	t := time.Now().Add(d)
+	return &t, nil
 }

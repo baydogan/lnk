@@ -53,6 +53,6 @@ var shortenCmd = &cobra.Command{
 
 func init() {
 	shortenCmd.Flags().StringVar(&shortenAlias, "alias", "", "custom alias (path) for the short link")
-	shortenCmd.Flags().StringVar(&shortenExpires, "expires", "", "expiry, e.g. 7d (not enforced yet)")
+	shortenCmd.Flags().StringVar(&shortenExpires, "expires", "", "expiry TTL, e.g. 30m, 1h, 7d, 2w")
 	shortenCmd.Flags().BoolVar(&shortenQR, "qr", false, "also print a QR code for the short link")
 }

@@ -37,7 +37,7 @@ var statsCmd = &cobra.Command{
 		}
 		expires := "never"
 		if u.ExpiresAt != nil {
-			expires = u.ExpiresAt.Format("2006-01-02 15:04")
+			expires = u.ExpiresAt.Local().Format("2006-01-02 15:04")
 		}
 
 		rows := [][]string{
@@ -46,7 +46,7 @@ var statsCmd = &cobra.Command{
 			{"Alias", alias},
 			{"Original", u.OriginalURL},
 			{"Clicks", fmt.Sprintf("%d", u.ClickCount)},
-			{"Created", u.CreatedAt.Format("2006-01-02 15:04")},
+			{"Created", u.CreatedAt.Local().Format("2006-01-02 15:04")},
 			{"Expires", expires},
 		}
 
