@@ -26,7 +26,7 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.svc.ShortenURL(&req)
+	resp, err := h.svc.ShortenURL(c.Request.Context(), &req)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -46,7 +46,7 @@ func (h *URLHandler) RedirectURL(c *gin.Context) {
 		return
 	}
 
-	target, err := h.svc.ResolveURL(code)
+	target, err := h.svc.ResolveURL(c.Request.Context(), code)
 	if err != nil {
 		respondError(c, err)
 		return
@@ -55,7 +55,7 @@ func (h *URLHandler) RedirectURL(c *gin.Context) {
 }
 
 func (h *URLHandler) DeleteURL(c *gin.Context) {
-	if err := h.svc.DeleteURL(c.Param("code")); err != nil {
+	if err := h.svc.DeleteURL(c.Request.Context(), c.Param("code")); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -63,7 +63,7 @@ func (h *URLHandler) DeleteURL(c *gin.Context) {
 }
 
 func (h *URLHandler) ListURLs(c *gin.Context) {
-	urls, err := h.svc.ListURLs()
+	urls, err := h.svc.ListURLs(c.Request.Context())
 	if err != nil {
 		respondError(c, err)
 		return
@@ -72,7 +72,7 @@ func (h *URLHandler) ListURLs(c *gin.Context) {
 }
 
 func (h *URLHandler) StatsURL(c *gin.Context) {
-	u, err := h.svc.GetURL(c.Param("code"))
+	u, err := h.svc.GetURL(c.Request.Context(), c.Param("code"))
 	if err != nil {
 		respondError(c, err)
 		return

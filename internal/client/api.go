@@ -44,7 +44,7 @@ func (c *APIClient) do(method, path string, body interface{}) ([]byte, int, erro
 
 	req.Header.Set("Content-Type", "application/json")
 	if c.Token != "" {
-		req.Header.Set("X-API-Key", c.Token)
+		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 
 	resp, err := c.HTTPClient.Do(req)

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/baydogan/lnk/internal/database"
@@ -18,14 +19,14 @@ func NewAPIKeyRepository() *APIKeyRepository {
 	return &APIKeyRepository{col: database.Collection("api_keys")}
 }
 
-func (r *APIKeyRepository) Count() (int64, error) {
-	return r.col.CountDocuments(context.Background(), bson.M{})
+func (r *APIKeyRepository) Count(ctx context.Context) (int64, error) {
+	return r.col.CountDocuments(ctx, bson.M{})
 }
 
-func (r *APIKeyRepository) Create(k *models.APIKey) error {
+func (r *APIKeyRepository) Create(ctx context.Context, k *models.APIKey) error {
 	k.ID = bson.NewObjectID()
 	k.CreatedAt = time.Now()
-	_, err := r.col.InsertOne(context.Background(), k)
+	_, err := r.col.InsertOne(ctx, k)
 	if mongo.IsDuplicateKeyError(err) {
 		return errs.ErrAlreadyExists
 	}
@@ -43,5 +44,23 @@ func (r *APIKeyRepository) EnsureIndexes(ctx context.Context) error {
 			Options: options.Index().SetUnique(true).SetName("uniq_user_id"),
 		},
 	})
+	return err
+}
+
+func (r *APIKeyRepository) GetByHash(ctx context.Context, hash string) (*models.APIKey, error) {
+	var k models.APIKey
+	err := r.col.FindOne(ctx, bson.M{"key_hash": hash}).Decode(&k)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, errs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &k, nil
+}
+
+func (r *APIKeyRepository) TouchLastUsed(ctx context.Context, id bson.ObjectID) error {
+	_, err := r.col.UpdateByID(ctx, id,
+		bson.M{"$set": bson.M{"last_used_at": time.Now()}})
 	return err
 }

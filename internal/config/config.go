@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/models"
 	"gopkg.in/yaml.v3"
 )
@@ -12,6 +13,7 @@ import (
 const (
 	configDirName  = ".lnk"
 	serverFileName = "server.yaml"
+	clientFileName = "config.yaml"
 
 	envConfigPath = "LNK_SERVER_CONFIG"
 )
@@ -70,6 +72,53 @@ func ReadServerConfig() (models.ServerConfig, bool, error) {
 
 func WriteServerConfig(cfg *models.ServerConfig) (string, error) {
 	path, err := ServerConfigPath()
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return "", err
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func ClientConfigPath() (string, error) {
+	dir, err := ConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, clientFileName), nil
+}
+
+func ReadClientConfig() (models.ClientConfig, error) {
+	var cfg models.ClientConfig
+	path, err := ClientConfigPath()
+	if err != nil {
+		return cfg, err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return cfg, errs.ErrNotLoggedIn
+		}
+		return cfg, err
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return cfg, err
+	}
+	return cfg, nil
+}
+
+func WriteClientConfig(cfg *models.ClientConfig) (string, error) {
+	path, err := ClientConfigPath()
 	if err != nil {
 		return "", err
 	}

@@ -20,30 +20,30 @@ func NewURLRepository() *URLRepository {
 	return &URLRepository{col: database.Collection("urls")}
 }
 
-func (r *URLRepository) CreateURL(url *models.URL) error {
+func (r *URLRepository) CreateURL(ctx context.Context, url *models.URL) error {
 	url.ID = bson.NewObjectID()
 	url.CreatedAt = time.Now()
 	url.UpdatedAt = time.Now()
 
-	_, err := r.col.InsertOne(context.Background(), url)
+	_, err := r.col.InsertOne(ctx, url)
 	if mongo.IsDuplicateKeyError(err) {
 		return errs.ErrAlreadyExists
 	}
 	return err
 }
 
-func (r *URLRepository) GetURLByCode(code string) (*models.URL, error) {
+func (r *URLRepository) GetURLByCode(ctx context.Context, code string) (*models.URL, error) {
 	var url models.URL
-	err := r.col.FindOne(context.Background(), bson.M{"code": code}).Decode(&url)
+	err := r.col.FindOne(ctx, bson.M{"code": code}).Decode(&url)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, errs.ErrNotFound
 	}
 	return &url, err
 }
 
-func (r *URLRepository) GetByCodeOrAlias(s string) (*models.URL, error) {
+func (r *URLRepository) GetByCodeOrAlias(ctx context.Context, s string) (*models.URL, error) {
 	var url models.URL
-	err := r.col.FindOne(context.Background(), bson.M{
+	err := r.col.FindOne(ctx, bson.M{
 		"$or": bson.A{
 			bson.M{"code": s},
 			bson.M{"alias": s},
@@ -55,31 +55,31 @@ func (r *URLRepository) GetByCodeOrAlias(s string) (*models.URL, error) {
 	return &url, err
 }
 
-func (r *URLRepository) IncrementClickCount(code string) error {
+func (r *URLRepository) IncrementClickCount(ctx context.Context, code string) error {
 	_, err := r.col.UpdateOne(
-		context.Background(),
+		ctx,
 		bson.M{"code": code},
 		bson.M{"$inc": bson.M{"click_count": 1}, "$set": bson.M{"updated_at": time.Now()}},
 	)
 	return err
 }
 
-func (r *URLRepository) GetAllURLs() ([]models.URL, error) {
-	cursor, err := r.col.Find(context.Background(), bson.M{})
+func (r *URLRepository) GetAllURLs(ctx context.Context) ([]models.URL, error) {
+	cursor, err := r.col.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	var urls []models.URL
-	if err = cursor.All(context.Background(), &urls); err != nil {
+	if err = cursor.All(ctx, &urls); err != nil {
 		return nil, err
 	}
 	return urls, nil
 }
 
-func (r *URLRepository) CodeExists(code string) (bool, error) {
-	count, err := r.col.CountDocuments(context.Background(), bson.M{
+func (r *URLRepository) CodeExists(ctx context.Context, code string) (bool, error) {
+	count, err := r.col.CountDocuments(ctx, bson.M{
 		"$or": bson.A{
 			bson.M{"code": code},
 			bson.M{"alias": code},
@@ -88,12 +88,12 @@ func (r *URLRepository) CodeExists(code string) (bool, error) {
 	return count > 0, err
 }
 
-func (r *URLRepository) CountByUserID(userID bson.ObjectID) (int64, error) {
-	return r.col.CountDocuments(context.Background(), bson.M{"user_id": userID})
+func (r *URLRepository) CountByUserID(ctx context.Context, userID bson.ObjectID) (int64, error) {
+	return r.col.CountDocuments(ctx, bson.M{"user_id": userID})
 }
 
-func (r *URLRepository) DeleteByCode(code string) error {
-	res, err := r.col.DeleteOne(context.Background(), bson.M{
+func (r *URLRepository) DeleteByCode(ctx context.Context, code string) error {
+	res, err := r.col.DeleteOne(ctx, bson.M{
 		"$or": bson.A{
 			bson.M{"code": code},
 			bson.M{"alias": code},

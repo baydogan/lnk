@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,7 +23,7 @@ func NewURLService(repo *repository.URLRepository, baseURL string) *URLService {
 	return &URLService{repo: repo, baseURL: baseURL}
 }
 
-func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResponse, error) {
+func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest) (*models.ShortenResponse, error) {
 	url := strings.TrimSpace(req.URL)
 	if url == "" {
 		return nil, errs.ErrInvalidURL
@@ -33,7 +34,7 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 	}
 
 	if req.Alias != "" {
-		exists, err := s.repo.CodeExists(req.Alias)
+		exists, err := s.repo.CodeExists(ctx, req.Alias)
 
 		if err != nil {
 			return nil, err
@@ -44,7 +45,7 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 		}
 	}
 
-	code, err := s.generateUniqueCode()
+	code, err := s.generateUniqueCode(ctx)
 
 	if err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 		Alias:       alias,
 	}
 
-	if err := s.repo.CreateURL(urlModel); err != nil {
+	if err := s.repo.CreateURL(ctx, urlModel); err != nil {
 		return nil, err
 	}
 
@@ -85,22 +86,22 @@ func (s *URLService) ShortenURL(req *models.ShortenRequest) (*models.ShortenResp
 	}, nil
 }
 
-func (s *URLService) ResolveURL(codeOrAlias string) (string, error) {
-	u, err := s.repo.GetByCodeOrAlias(codeOrAlias)
+func (s *URLService) ResolveURL(ctx context.Context, codeOrAlias string) (string, error) {
+	u, err := s.repo.GetByCodeOrAlias(ctx, codeOrAlias)
 	if err != nil {
 		return "", err
 	}
 	if u.ExpiresAt != nil && time.Now().After(*u.ExpiresAt) {
 		return "", errs.ErrNotFound
 	}
-	if err := s.repo.IncrementClickCount(u.Code); err != nil {
+	if err := s.repo.IncrementClickCount(ctx, u.Code); err != nil {
 		logger.Error().Err(err).Str("code", u.Code).Msg("click increment failed")
 	}
 	return u.OriginalURL, nil
 }
 
-func (s *URLService) ListURLs() ([]models.URLResponse, error) {
-	urls, err := s.repo.GetAllURLs()
+func (s *URLService) ListURLs(ctx context.Context) ([]models.URLResponse, error) {
+	urls, err := s.repo.GetAllURLs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +114,8 @@ func (s *URLService) ListURLs() ([]models.URLResponse, error) {
 	return out, nil
 }
 
-func (s *URLService) GetURL(codeOrAlias string) (*models.URLResponse, error) {
-	u, err := s.repo.GetByCodeOrAlias(codeOrAlias)
+func (s *URLService) GetURL(ctx context.Context, codeOrAlias string) (*models.URLResponse, error) {
+	u, err := s.repo.GetByCodeOrAlias(ctx, codeOrAlias)
 	if err != nil {
 		return nil, err
 	}
@@ -131,18 +132,18 @@ func (s *URLService) shortURL(u *models.URL) string {
 	return fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), code)
 }
 
-func (s *URLService) DeleteURL(codeOrAlias string) error {
-	return s.repo.DeleteByCode(codeOrAlias)
+func (s *URLService) DeleteURL(ctx context.Context, codeOrAlias string) error {
+	return s.repo.DeleteByCode(ctx, codeOrAlias)
 }
 
-func (s *URLService) generateUniqueCode() (string, error) {
+func (s *URLService) generateUniqueCode(ctx context.Context) (string, error) {
 	for range 5 {
 		code, err := gonanoid.New(7)
 		if err != nil {
 			return "", err
 		}
 
-		exists, err := s.repo.CodeExists(code)
+		exists, err := s.repo.CodeExists(ctx, code)
 		if err != nil {
 			return "", err
 		}

@@ -37,8 +37,8 @@ func hashKey(plaintext string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func (s *AuthService) EnsureAdminKey() (plaintext string, created bool, err error) {
-	n, err := s.keys.Count()
+func (s *AuthService) EnsureAdminKey(ctx context.Context) (plaintext string, created bool, err error) {
+	n, err := s.keys.Count(ctx)
 	if err != nil {
 		return "", false, err
 	}
@@ -49,7 +49,7 @@ func (s *AuthService) EnsureAdminKey() (plaintext string, created bool, err erro
 	if err != nil {
 		return "", false, err
 	}
-	if err := s.keys.Create(&models.APIKey{KeyHash: hash, Prefix: prefix}); err != nil {
+	if err := s.keys.Create(ctx, &models.APIKey{KeyHash: hash, Prefix: prefix}); err != nil {
 		if errors.Is(err, errs.ErrAlreadyExists) {
 			return "", false, nil
 		}
@@ -60,4 +60,16 @@ func (s *AuthService) EnsureAdminKey() (plaintext string, created bool, err erro
 
 func (s *AuthService) EnsureIndexes(ctx context.Context) error {
 	return s.keys.EnsureIndexes(ctx)
+}
+
+func (s *AuthService) Authenticate(ctx context.Context, plaintext string) (*models.APIKey, error) {
+	key, err := s.keys.GetByHash(ctx, hashKey(plaintext))
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return nil, errs.ErrInvalidKey
+		}
+		return nil, err
+	}
+	_ = s.keys.TouchLastUsed(ctx, key.ID) // best-effort, hatası yutulur
+	return key, nil
 }

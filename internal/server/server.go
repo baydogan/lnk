@@ -31,7 +31,7 @@ func Run() error {
 		logger.Fatal().Err(err).Msg("failed to ensure indexes")
 	}
 
-	pt, created, err := c.AuthService.EnsureAdminKey()
+	pt, created, err := c.AuthService.EnsureAdminKey(context.Background())
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure admin key")
 	}
@@ -40,7 +40,7 @@ func Run() error {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
-	router := NewRouter(c.URLHandler)
+	router := NewRouter(c.URLHandler, c.AuthService)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
