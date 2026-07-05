@@ -136,3 +136,17 @@ func WriteClientConfig(cfg *models.ClientConfig) (string, error) {
 	}
 	return path, nil
 }
+
+func RemoveClientConfig() (string, error) {
+	path, err := ClientConfigPath()
+	if err != nil {
+		return "", err
+	}
+	if err := os.Remove(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return path, errs.ErrNotLoggedIn
+		}
+		return "", err
+	}
+	return path, nil
+}
