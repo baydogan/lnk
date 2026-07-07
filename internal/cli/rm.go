@@ -13,9 +13,10 @@ import (
 var rmYes bool
 
 var rmCmd = &cobra.Command{
-	Use:   "rm <code>",
-	Short: "Delete a short link by code or alias",
-	Args:  cobra.ExactArgs(1),
+	Use:     "rm <code>",
+	Short:   "Delete a short link by code or alias",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		code := args[0]
 

@@ -14,9 +14,10 @@ import (
 )
 
 var lsCmd = &cobra.Command{
-	Use:   "ls",
-	Short: "List all short links",
-	Args:  cobra.NoArgs,
+	Use:     "ls",
+	Short:   "List all short links",
+	Args:    cobra.NoArgs,
+	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		body, status, err := client.DefaultClient.Get("/api/v1/urls")
 		if err != nil {

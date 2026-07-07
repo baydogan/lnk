@@ -17,10 +17,11 @@ import (
 var qrOut string
 
 var qrCmd = &cobra.Command{
-	Use:   "qr <code>",
-	Short: "Show a QR code for a short link (terminal, or PNG with -o)",
-	Long:  "Generates a QR code that encodes the short URL, so scanning it goes through the shortener (and counts the click). Nothing is stored — the QR is derived on demand.",
-	Args:  cobra.ExactArgs(1),
+	Use:     "qr <code>",
+	Short:   "Show a QR code for a short link (terminal, or PNG with -o)",
+	Long:    "Generates a QR code that encodes the short URL, so scanning it goes through the shortener (and counts the click). Nothing is stored — the QR is derived on demand.",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		body, status, err := client.DefaultClient.Get("/api/v1/urls/" + url.PathEscape(args[0]))
 		if err != nil {

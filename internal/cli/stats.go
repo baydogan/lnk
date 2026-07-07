@@ -14,9 +14,10 @@ import (
 )
 
 var statsCmd = &cobra.Command{
-	Use:   "stats <code>",
-	Short: "Show stats for a short link by code or alias",
-	Args:  cobra.ExactArgs(1),
+	Use:     "stats <code>",
+	Short:   "Show stats for a short link by code or alias",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		body, status, err := client.DefaultClient.Get("/api/v1/urls/" + url.PathEscape(args[0]))
 		if err != nil {

@@ -15,25 +15,26 @@ var rootCmd = &cobra.Command{
 	Use:   "lnk",
 	Short: "Terminal-based URL shortener",
 	Long:  `lnk is a CLI tool that shortens URLs via local or cloud backend. Shorten, list, track, and manage your links from the terminal.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		url := serverURL
-		var token string
+}
 
-		if cfg, err := config.ReadClientConfig(); err == nil {
-			if !cmd.Flags().Changed("server") && cfg.Server != "" {
-				url = cfg.Server
-			}
-			token = cfg.APIKey
-		} else if !errors.Is(err, errs.ErrNotLoggedIn) {
-			return err
-		}
+func requireClient(cmd *cobra.Command, args []string) error {
+	url := serverURL
+	var token string
 
-		client.DefaultClient = client.New(url)
-		if token != "" {
-			client.DefaultClient.SetToken(token)
+	if cfg, err := config.ReadClientConfig(); err == nil {
+		if !cmd.Flags().Changed("server") && cfg.Server != "" {
+			url = cfg.Server
 		}
-		return nil
-	},
+		token = cfg.APIKey
+	} else if !errors.Is(err, errs.ErrNotLoggedIn) {
+		return err
+	}
+
+	client.DefaultClient = client.New(url)
+	if token != "" {
+		client.DefaultClient.SetToken(token)
+	}
+	return nil
 }
 
 func Execute() error {

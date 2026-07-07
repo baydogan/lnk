@@ -17,10 +17,11 @@ var (
 )
 
 var shortenCmd = &cobra.Command{
-	Use:   "shorten [url]",
-	Short: "Shorten a URL",
-	Long:  `Create a short URL that redirects to the given long URL.`,
-	Args:  cobra.ExactArgs(1),
+	Use:     "shorten [url]",
+	Short:   "Shorten a URL",
+	Long:    `Create a short URL that redirects to the given long URL.`,
+	Args:    cobra.ExactArgs(1),
+	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		req := models.ShortenRequest{
 			URL:     args[0],
