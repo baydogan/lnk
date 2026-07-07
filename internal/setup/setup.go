@@ -23,9 +23,9 @@ type Provided struct {
 	Redis   bool
 }
 
-func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
+func Run(cfg *models.ServerConfig, p Provided) error {
 	if p.Mode && cfg.Mode != "single" && cfg.Mode != "multi" {
-		return false, fmt.Errorf("invalid mode %q: must be \"single\" or \"multi\"", cfg.Mode)
+		return fmt.Errorf("invalid mode %q: must be \"single\" or \"multi\"", cfg.Mode)
 	}
 	if !p.Mode && cfg.Mode == "" {
 		cfg.Mode = "single"
@@ -39,8 +39,6 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 	if !p.Redis && cfg.RedisAddr == "" {
 		cfg.RedisAddr = defaultRedisAddr
 	}
-
-	var configureClient bool
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -87,38 +85,23 @@ func Run(cfg *models.ServerConfig, p Provided) (bool, error) {
 				Value(&cfg.RedisAddr).
 				Validate(required("Redis address")),
 		).WithHideFunc(func() bool { return p.Redis }),
-
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("Configure local lnk client now?").
-				Description("Writes ~/.lnk/config.yaml for this machine so you\ncan use lnk here without copy-pasting the admin key.").
-				Affirmative("Yes, set it up").
-				Negative("No, remote only").
-				Value(&configureClient),
-		).WithHideFunc(func() bool { return cfg.Mode != "multi" }),
 	).WithTheme(Theme()).WithShowHelp(true)
 
 	hasPrompts := !p.Mode ||
 		!p.BaseURL ||
 		(!p.Admin && cfg.Mode == "multi") ||
 		!p.Mongo ||
-		!p.Redis ||
-		cfg.Mode == "multi"
+		!p.Redis
 
 	if hasPrompts {
 		fmt.Println(banner())
 
 		if err := form.Run(); err != nil {
-			return false, err
+			return err
 		}
 	}
 
-	// Single-user always configures the local client.
-	if cfg.Mode != "multi" {
-		configureClient = true
-	}
-
-	return configureClient, nil
+	return nil
 }
 
 func ConfirmOverwrite(path string) (bool, error) {
@@ -141,7 +124,7 @@ func ConfirmOverwrite(path string) (bool, error) {
 	return overwrite, nil
 }
 
-func Summary(cfg *models.ServerConfig, configureClient bool) {
+func Summary(cfg *models.ServerConfig) {
 	label := lipgloss.NewStyle().Foreground(subtle).Width(8)
 	val := lipgloss.NewStyle().Foreground(text).Bold(true)
 
@@ -154,7 +137,6 @@ func Summary(cfg *models.ServerConfig, configureClient bool) {
 	if cfg.Mode == "multi" {
 		rows = append(rows, label.Render("admin")+val.Render(cfg.Admin))
 	}
-	rows = append(rows, label.Render("client")+val.Render(yesno(configureClient)))
 
 	title := lipgloss.NewStyle().Foreground(neon).Bold(true).Render("✔ configuration ready")
 	card := lipgloss.NewStyle().
@@ -189,13 +171,6 @@ func banner() string {
 		BorderForeground(violet).
 		Padding(0, 3)
 	return box.Render(logo + "  " + dot + "  " + tag)
-}
-
-func yesno(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
 }
 
 func required(label string) func(string) error {

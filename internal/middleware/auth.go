@@ -21,7 +21,7 @@ func Auth(authSvc *service.AuthService) gin.HandlerFunc {
 			return
 		}
 		c.Set("api_key", key)
-		if key.UserID != nil { // Phase 3 scoping için hazır
+		if key.UserID != nil {
 			c.Set("user_id", *key.UserID)
 		}
 		c.Next()

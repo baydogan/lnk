@@ -27,8 +27,7 @@ var initCmd = &cobra.Command{
 			Redis:   cmd.Flags().Changed("redis-addr"),
 		}
 
-		configureClient, err := setup.Run(cfg, p)
-		if err != nil {
+		if err := setup.Run(cfg, p); err != nil {
 			return err
 		}
 
@@ -52,11 +51,9 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		setup.Summary(cfg, configureClient)
+		setup.Summary(cfg)
 		setup.Saved("server config written to", written)
 
-		// TODO: when configureClient, write ~/.lnk/config.yaml with the
-		// generated admin key.
 		return nil
 	},
 }

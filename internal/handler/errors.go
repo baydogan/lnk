@@ -10,12 +10,12 @@ import (
 )
 
 var errStatus = map[error]int{
-	errs.ErrInvalidURL:    http.StatusBadRequest, // 400
-	errs.ErrExpireFormat:  http.StatusBadRequest, // 400
-	errs.ErrAliasExists:   http.StatusConflict,   // 409
-	errs.ErrAlreadyExists: http.StatusConflict,   // 409
-	errs.ErrURLLimit:      http.StatusForbidden,  // 403
-	errs.ErrNotFound:      http.StatusNotFound,   // 404
+	errs.ErrInvalidURL:    http.StatusBadRequest,
+	errs.ErrExpireFormat:  http.StatusBadRequest,
+	errs.ErrAliasExists:   http.StatusConflict,
+	errs.ErrAlreadyExists: http.StatusConflict,
+	errs.ErrURLLimit:      http.StatusForbidden,
+	errs.ErrNotFound:      http.StatusNotFound,
 }
 
 func respondError(c *gin.Context, err error) {

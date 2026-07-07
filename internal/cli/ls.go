@@ -63,7 +63,6 @@ var lsCmd = &cobra.Command{
 	},
 }
 
-// apiError builds an error from a non-2xx API response body ({"error": "..."}).
 func apiError(body []byte, status int) error {
 	var e map[string]string
 	if json.Unmarshal(body, &e) == nil && e["error"] != "" {

@@ -13,7 +13,7 @@ var (
 	subtle = lipgloss.AdaptiveColor{Light: "#868E96", Dark: "#7C7F96"}
 	faint  = lipgloss.AdaptiveColor{Light: "#ADB5BD", Dark: "#494D64"}
 	danger = lipgloss.AdaptiveColor{Light: "#E03131", Dark: "#FF6B6B"}
-	ink    = lipgloss.Color("#11111B") // text on top of a neon fill
+	ink    = lipgloss.Color("#11111B")
 )
 
 func Theme() *huh.Theme {

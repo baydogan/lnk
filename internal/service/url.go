@@ -158,10 +158,6 @@ func (s *URLService) generateUniqueCode(ctx context.Context) (string, error) {
 	return "", errors.New("failed to generate unique code after 5 attempts")
 }
 
-// parseExpiry turns a relative TTL like "1h", "30m", "7d", "2w" into an absolute
-// time.Time (now + duration). Empty string means no expiry. Days ("d") and weeks
-// ("w") are handled here since time.ParseDuration doesn't support them; everything
-// else (s/m/h and combinations) delegates to time.ParseDuration.
 func parseExpiry(s string) (*time.Time, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {

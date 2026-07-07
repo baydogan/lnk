@@ -70,6 +70,6 @@ func (s *AuthService) Authenticate(ctx context.Context, plaintext string) (*mode
 		}
 		return nil, err
 	}
-	_ = s.keys.TouchLastUsed(ctx, key.ID) // best-effort, hatası yutulur
+	_ = s.keys.TouchLastUsed(ctx, key.ID)
 	return key, nil
 }
