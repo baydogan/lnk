@@ -10,14 +10,13 @@ import (
 
 	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/models"
-	"github.com/baydogan/lnk/internal/repository"
 )
 
-type AuthService struct{ keys *repository.APIKeyRepository }
+type AuthService struct{ keys APIKeyStore }
 
 const keyPrefix = "lnk_"
 
-func NewAuthService(keys *repository.APIKeyRepository) *AuthService {
+func NewAuthService(keys APIKeyStore) *AuthService {
 	return &AuthService{keys: keys}
 }
 

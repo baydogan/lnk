@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/baydogan/lnk/internal/config"
-	"github.com/baydogan/lnk/internal/container"
 	"github.com/baydogan/lnk/internal/database"
+	"github.com/baydogan/lnk/internal/handler"
 	"github.com/baydogan/lnk/internal/logger"
 	"github.com/baydogan/lnk/internal/models"
+	"github.com/baydogan/lnk/internal/repository"
+	"github.com/baydogan/lnk/internal/service"
 )
 
 func Run() error {
@@ -25,13 +27,14 @@ func Run() error {
 		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
-	c := container.New(cfg)
+	authSvc := service.NewAuthService(repository.NewAPIKeyRepository())
+	urlHandler := handler.NewHTTPHandler(service.NewURLService(repository.NewURLRepository(), cfg.BaseURL))
 
-	if err := c.AuthService.EnsureIndexes(context.Background()); err != nil {
+	if err := authSvc.EnsureIndexes(context.Background()); err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure indexes")
 	}
 
-	pt, created, err := c.AuthService.EnsureAdminKey(context.Background())
+	pt, created, err := authSvc.EnsureAdminKey(context.Background())
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure admin key")
 	}
@@ -40,7 +43,7 @@ func Run() error {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
-	router := NewRouter(c.URLHandler, c.AuthService)
+	router := NewRouter(urlHandler, authSvc)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

@@ -11,16 +11,15 @@ import (
 	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/logger"
 	"github.com/baydogan/lnk/internal/models"
-	"github.com/baydogan/lnk/internal/repository"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type URLService struct {
-	repo    *repository.URLRepository
+	repo    URLStore
 	baseURL string
 }
 
-func NewURLService(repo *repository.URLRepository, baseURL string) *URLService {
+func NewURLService(repo URLStore, baseURL string) *URLService {
 	return &URLService{repo: repo, baseURL: baseURL}
 }
 

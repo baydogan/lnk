@@ -1,4 +1,4 @@
-.PHONY: dev up down reset install run
+.PHONY: dev up down reset install run test test-race cover
 
 dev:
 	docker compose up -d mongodb redis
@@ -18,3 +18,12 @@ run:
 
 install:
 	go build -o $(shell go env GOPATH)/bin/lnk ./cmd/lnk/
+
+test:
+	go test ./...
+
+test-race:
+	go test ./... -race
+
+cover:
+	go test ./... -cover
