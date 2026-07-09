@@ -1,4 +1,4 @@
-.PHONY: dev up down reset install run test test-race cover
+.PHONY: dev up down reset install run test test-race cover test-integration test-all
 
 dev:
 	docker compose up -d mongodb redis
@@ -27,3 +27,9 @@ test-race:
 
 cover:
 	go test ./... -cover
+
+test-integration:
+	go test -tags integration ./internal/repository/...
+
+test-all:
+	go test -tags integration ./...
