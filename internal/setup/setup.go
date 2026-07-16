@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/baydogan/lnk/internal/models"
+	"github.com/baydogan/lnk/domain"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
 const (
 	defaultBaseURL   = "http://localhost:8080"
-	defaultMongoURI  = "mongodb://lnk:lnk@mongodb:27017/lnk?authSource=admin"
-	defaultRedisAddr = "redis:6379"
+	defaultMongoURI  = "mongodb://lnk:lnk@localhost:27017/lnk?authSource=admin"
+	defaultRedisAddr = "localhost:6379"
 )
 
 type Provided struct {
@@ -23,7 +23,7 @@ type Provided struct {
 	Redis   bool
 }
 
-func Run(cfg *models.ServerConfig, p Provided) error {
+func Run(cfg *domain.ServerConfig, p Provided) error {
 	if p.Mode && cfg.Mode != "single" && cfg.Mode != "multi" {
 		return fmt.Errorf("invalid mode %q: must be \"single\" or \"multi\"", cfg.Mode)
 	}
@@ -124,7 +124,7 @@ func ConfirmOverwrite(path string) (bool, error) {
 	return overwrite, nil
 }
 
-func Summary(cfg *models.ServerConfig) {
+func Summary(cfg *domain.ServerConfig) {
 	label := lipgloss.NewStyle().Foreground(subtle).Width(8)
 	val := lipgloss.NewStyle().Foreground(text).Bold(true)
 

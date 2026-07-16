@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/config"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var loginCmd = &cobra.Command{
 			return errors.New("--api-key is required")
 		}
 
-		cfg := &models.ClientConfig{Server: serverURL, APIKey: loginAPIKey}
+		cfg := &domain.ClientConfig{Server: serverURL, APIKey: loginAPIKey}
 		path, err := config.WriteClientConfig(cfg)
 		if err != nil {
 			return err

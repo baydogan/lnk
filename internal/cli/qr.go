@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/client"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/mdp/qrterminal/v3"
 	qrcode "github.com/skip2/go-qrcode"
 	"github.com/spf13/cobra"
@@ -31,7 +31,7 @@ var qrCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var u models.URLResponse
+		var u domain.URLResponse
 		if err := json.Unmarshal(body, &u); err != nil {
 			return fmt.Errorf("bad response (status %d): %w", status, err)
 		}
