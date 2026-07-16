@@ -67,3 +67,14 @@ func (r *APIKeyRepository) DeleteByUserID(ctx context.Context, userID bson.Objec
 	_, err := r.col.DeleteMany(ctx, bson.M{"user_id": userID})
 	return err
 }
+
+func (r *APIKeyRepository) DeleteByID(ctx context.Context, id bson.ObjectID) error {
+	res, err := r.col.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}

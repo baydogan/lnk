@@ -14,3 +14,7 @@ type APIKey struct {
 	CreatedAt  time.Time      `bson:"created_at"`
 	LastUsedAt *time.Time     `bson:"last_used_at,omitempty"`
 }
+
+type KeyResponse struct {
+	APIKey string `json:"api_key"`
+}

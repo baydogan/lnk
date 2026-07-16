@@ -142,6 +142,26 @@ func TestAPIKeyDeleteByUserID(t *testing.T) {
 	}
 }
 
+func TestAPIKeyDeleteByID(t *testing.T) {
+	clearCollection(t, "api_keys")
+	repo := NewAPIKeyRepository(testDB)
+	ctx := context.Background()
+
+	k := &domain.APIKey{KeyHash: "h", Prefix: "p"}
+	if err := repo.Create(ctx, k); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if err := repo.DeleteByID(ctx, k.ID); err != nil {
+		t.Fatalf("DeleteByID: %v", err)
+	}
+	if _, err := repo.GetByHash(ctx, "h"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("key still present, err = %v", err)
+	}
+	if err := repo.DeleteByID(ctx, bson.NewObjectID()); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("delete missing err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestAPIKeyEnsureIndexesIdempotent(t *testing.T) {
 	clearCollection(t, "api_keys")
 	repo := NewAPIKeyRepository(testDB)

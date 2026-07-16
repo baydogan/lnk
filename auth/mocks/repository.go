@@ -13,6 +13,7 @@ type KeyRepository struct {
 	ByHash       map[string]*domain.APIKey
 	Touched      []bson.ObjectID
 	DeletedUsers []bson.ObjectID
+	DeletedIDs   []bson.ObjectID
 
 	CountErr  error
 	CreateErr error
@@ -55,5 +56,10 @@ func (f *KeyRepository) TouchLastUsed(_ context.Context, id bson.ObjectID) error
 
 func (f *KeyRepository) DeleteByUserID(_ context.Context, id bson.ObjectID) error {
 	f.DeletedUsers = append(f.DeletedUsers, id)
+	return f.DeleteErr
+}
+
+func (f *KeyRepository) DeleteByID(_ context.Context, id bson.ObjectID) error {
+	f.DeletedIDs = append(f.DeletedIDs, id)
 	return f.DeleteErr
 }

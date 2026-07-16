@@ -14,6 +14,7 @@ type Repository interface {
 	EnsureIndexes(ctx context.Context) error
 	GetByHash(ctx context.Context, hash string) (*domain.APIKey, error)
 	TouchLastUsed(ctx context.Context, id bson.ObjectID) error
+	DeleteByID(ctx context.Context, id bson.ObjectID) error
 }
 
 type Service struct {
@@ -47,6 +48,20 @@ func (s *Service) EnsureAdminKey(ctx context.Context) (plaintext string, created
 
 func (s *Service) EnsureIndexes(ctx context.Context) error {
 	return s.keys.EnsureIndexes(ctx)
+}
+
+func (s *Service) RotateKey(ctx context.Context, oldKeyID bson.ObjectID, userID *bson.ObjectID) (string, error) {
+	if err := s.keys.DeleteByID(ctx, oldKeyID); err != nil {
+		return "", err
+	}
+	plaintext, hash, prefix, err := domain.GenerateAPIKey()
+	if err != nil {
+		return "", err
+	}
+	if err := s.keys.Create(ctx, &domain.APIKey{KeyHash: hash, Prefix: prefix, UserID: userID}); err != nil {
+		return "", err
+	}
+	return plaintext, nil
 }
 
 func (s *Service) Authenticate(ctx context.Context, plaintext string) (*domain.APIKey, error) {

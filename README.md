@@ -72,7 +72,19 @@ lnk ls                            # list your links
 lnk rm <code>                     # delete (confirm; -y to skip)
 lnk stats <code>                  # click stats (code or alias)
 lnk qr <code>                     # terminal QR, or -o file.png
+
+# Your API key (any mode)
+lnk key rotate                    # replace your key; the old one stops working immediately
+
+# Multi-user (admin only, MODE=multi)
+lnk user create <username>        # create a user and print their API key
+lnk user list
+lnk user delete <username>        # delete a user and revoke their key (admins can't be deleted)
+lnk user whoami                   # show the current user (username + role)
 ```
+
+In multi-user mode each user only sees and manages their own links (`lnk ls`, `rm`, `stats`);
+an admin sees and manages all. In single-user mode there is one owner and no scoping.
 
 `--expires` accepts relative TTLs: `30m`, `1h`, `7d`, `2w`.
 

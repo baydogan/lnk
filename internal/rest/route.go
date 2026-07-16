@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(mode string, h *URLHandler, userHandler *UserHandler, authSvc *auth.Service, userSvc *user.Service) *gin.Engine {
+func NewRouter(mode string, h *URLHandler, userHandler *UserHandler, keyHandler *KeyHandler, authSvc *auth.Service, userSvc *user.Service) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -27,6 +27,7 @@ func NewRouter(mode string, h *URLHandler, userHandler *UserHandler, authSvc *au
 		api.DELETE("/:code", h.DeleteURL)
 		api.GET("/urls", h.ListURLs)
 		api.GET("/urls/:code", h.StatsURL)
+		api.POST("/keys/rotate", keyHandler.Rotate)
 
 		if mode == domain.ModeMulti {
 			api.GET("/me", userHandler.Whoami)

@@ -76,6 +76,39 @@ func TestEnsureAdminKeyDuplicateRace(t *testing.T) {
 	}
 }
 
+func TestRotateKey(t *testing.T) {
+	repo := mocks.NewKeyRepository()
+	svc := NewService(repo)
+	oldID := bson.NewObjectID()
+	uid := bson.NewObjectID()
+
+	pt, err := svc.RotateKey(context.Background(), oldID, &uid)
+	if err != nil || pt == "" {
+		t.Fatalf("RotateKey = %q, %v", pt, err)
+	}
+	if len(repo.DeletedIDs) != 1 || repo.DeletedIDs[0] != oldID {
+		t.Fatalf("old key not deleted: %+v", repo.DeletedIDs)
+	}
+	if len(repo.Created) != 1 || repo.Created[0].UserID == nil || *repo.Created[0].UserID != uid {
+		t.Fatalf("new key not bound to user: %+v", repo.Created)
+	}
+	if repo.Created[0].KeyHash != domain.HashKey(pt) {
+		t.Fatal("new key hash mismatch")
+	}
+}
+
+func TestRotateKeyNoNewKeyOnDeleteError(t *testing.T) {
+	repo := mocks.NewKeyRepository()
+	repo.DeleteErr = errors.New("boom")
+	svc := NewService(repo)
+	if _, err := svc.RotateKey(context.Background(), bson.NewObjectID(), nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if len(repo.Created) != 0 {
+		t.Fatal("should not create a new key when delete fails")
+	}
+}
+
 func TestEnsureIndexesDelegates(t *testing.T) {
 	repo := mocks.NewKeyRepository()
 	repo.IdxErr = errors.New("index failed")

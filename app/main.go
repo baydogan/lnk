@@ -44,6 +44,7 @@ func main() {
 	userSvc := user.NewService(userRepo, keyRepo)
 	urlHandler := rest.NewHTTPHandler(url.NewService(urlRepo, cfg.BaseURL))
 	userHandler := rest.NewUserHandler(userSvc)
+	keyHandler := rest.NewKeyHandler(authSvc)
 
 	if err := authSvc.EnsureIndexes(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure indexes")
@@ -73,7 +74,7 @@ func main() {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
-	router := rest.NewRouter(cfg.Mode, urlHandler, userHandler, authSvc, userSvc)
+	router := rest.NewRouter(cfg.Mode, urlHandler, userHandler, keyHandler, authSvc, userSvc)
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
 	logger.Info().Str("port", port).Msg("lnk server starting")
