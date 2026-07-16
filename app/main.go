@@ -13,6 +13,7 @@ import (
 	"github.com/baydogan/lnk/internal/logger"
 	mongorepo "github.com/baydogan/lnk/internal/repository/mongo"
 	"github.com/baydogan/lnk/internal/rest"
+	"github.com/baydogan/lnk/settings"
 	"github.com/baydogan/lnk/url"
 	"github.com/baydogan/lnk/user"
 )
@@ -42,6 +43,7 @@ func main() {
 
 	authSvc := auth.NewService(keyRepo)
 	userSvc := user.NewService(userRepo, keyRepo)
+	settingsSvc := settings.NewService(mongorepo.NewSettingsRepository(db))
 	urlHandler := rest.NewHTTPHandler(url.NewService(urlRepo, cfg.BaseURL))
 	userHandler := rest.NewUserHandler(userSvc)
 	keyHandler := rest.NewKeyHandler(authSvc)
@@ -50,11 +52,19 @@ func main() {
 		logger.Fatal().Err(err).Msg("failed to ensure indexes")
 	}
 
+	mode := domain.ModeSingle
+	if cfg.Mode == domain.ModeMulti {
+		mode = domain.ModeMulti
+	}
+	if err := settingsSvc.EnsureMode(ctx, mode); err != nil {
+		logger.Fatal().Err(err).Msg("deployment mode check failed")
+	}
+
 	var (
 		pt      string
 		created bool
 	)
-	if cfg.Mode == domain.ModeMulti {
+	if mode == domain.ModeMulti {
 		if err := userSvc.EnsureIndexes(ctx); err != nil {
 			logger.Fatal().Err(err).Msg("failed to ensure user indexes")
 		}
@@ -74,7 +84,7 @@ func main() {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
-	router := rest.NewRouter(cfg.Mode, urlHandler, userHandler, keyHandler, authSvc, userSvc)
+	router := rest.NewRouter(mode, urlHandler, userHandler, keyHandler, authSvc, userSvc)
 	srv := &http.Server{Addr: ":" + port, Handler: router}
 
 	logger.Info().Str("port", port).Msg("lnk server starting")

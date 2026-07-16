@@ -15,4 +15,5 @@ var (
 	ErrInvalidUsername   = errors.New("invalid username")
 	ErrInvalidRole       = errors.New("invalid role (use: admin, user)")
 	ErrCannotDeleteAdmin = errors.New("cannot delete an admin user")
+	ErrModeMismatch      = errors.New("deployment mode mismatch")
 )
