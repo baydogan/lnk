@@ -64,3 +64,8 @@ func (r *APIKeyRepository) TouchLastUsed(ctx context.Context, id bson.ObjectID) 
 		bson.M{"$set": bson.M{"last_used_at": time.Now()}})
 	return err
 }
+
+func (r *APIKeyRepository) DeleteByUserID(ctx context.Context, userID bson.ObjectID) error {
+	_, err := r.col.DeleteMany(ctx, bson.M{"user_id": userID})
+	return err
+}

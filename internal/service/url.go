@@ -12,6 +12,7 @@ import (
 	"github.com/baydogan/lnk/internal/logger"
 	"github.com/baydogan/lnk/internal/models"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type URLService struct {
@@ -23,7 +24,7 @@ func NewURLService(repo URLStore, baseURL string) *URLService {
 	return &URLService{repo: repo, baseURL: baseURL}
 }
 
-func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest) (*models.ShortenResponse, error) {
+func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest, ownerID *bson.ObjectID) (*models.ShortenResponse, error) {
 	url := strings.TrimSpace(req.URL)
 	if url == "" {
 		return nil, errs.ErrInvalidURL
@@ -65,6 +66,7 @@ func (s *URLService) ShortenURL(ctx context.Context, req *models.ShortenRequest)
 		OriginalURL: url,
 		Alias:       alias,
 		ExpiresAt:   expiresAt,
+		UserID:      ownerID,
 	}
 
 	if err := s.repo.CreateURL(ctx, urlModel); err != nil {
@@ -102,8 +104,8 @@ func (s *URLService) ResolveURL(ctx context.Context, codeOrAlias string) (string
 	return u.OriginalURL, nil
 }
 
-func (s *URLService) ListURLs(ctx context.Context) ([]models.URLResponse, error) {
-	urls, err := s.repo.GetAllURLs(ctx)
+func (s *URLService) ListURLs(ctx context.Context, ownerID *bson.ObjectID) ([]models.URLResponse, error) {
+	urls, err := s.repo.GetURLsByOwner(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,14 +118,24 @@ func (s *URLService) ListURLs(ctx context.Context) ([]models.URLResponse, error)
 	return out, nil
 }
 
-func (s *URLService) GetURL(ctx context.Context, codeOrAlias string) (*models.URLResponse, error) {
+func (s *URLService) GetURL(ctx context.Context, codeOrAlias string, ownerID *bson.ObjectID) (*models.URLResponse, error) {
 	u, err := s.repo.GetByCodeOrAlias(ctx, codeOrAlias)
 	if err != nil {
 		return nil, err
 	}
+	if !owns(u, ownerID) {
+		return nil, errs.ErrNotFound
+	}
 	r := u.ToResponse()
 	r.ShortURL = s.shortURL(u)
 	return &r, nil
+}
+
+func owns(u *models.URL, ownerID *bson.ObjectID) bool {
+	if ownerID == nil {
+		return true
+	}
+	return u.UserID != nil && *u.UserID == *ownerID
 }
 
 func (s *URLService) shortURL(u *models.URL) string {
@@ -134,7 +146,16 @@ func (s *URLService) shortURL(u *models.URL) string {
 	return fmt.Sprintf("%s/%s", strings.TrimRight(s.baseURL, "/"), code)
 }
 
-func (s *URLService) DeleteURL(ctx context.Context, codeOrAlias string) error {
+func (s *URLService) DeleteURL(ctx context.Context, codeOrAlias string, ownerID *bson.ObjectID) error {
+	if ownerID != nil {
+		u, err := s.repo.GetByCodeOrAlias(ctx, codeOrAlias)
+		if err != nil {
+			return err
+		}
+		if !owns(u, ownerID) {
+			return errs.ErrNotFound
+		}
+	}
 	return s.repo.DeleteByCode(ctx, codeOrAlias)
 }
 

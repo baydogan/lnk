@@ -12,6 +12,7 @@ import (
 	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type fakeStore struct {
@@ -33,9 +34,11 @@ func (f *fakeStore) GetByCodeOrAlias(context.Context, string) (*models.URL, erro
 }
 
 func (f *fakeStore) IncrementClickCount(context.Context, string) error { return nil }
-func (f *fakeStore) GetAllURLs(context.Context) ([]models.URL, error)  { return f.all, nil }
-func (f *fakeStore) CodeExists(context.Context, string) (bool, error)  { return f.exists, nil }
-func (f *fakeStore) DeleteByCode(context.Context, string) error        { return f.deleteErr }
+func (f *fakeStore) GetURLsByOwner(context.Context, *bson.ObjectID) ([]models.URL, error) {
+	return f.all, nil
+}
+func (f *fakeStore) CodeExists(context.Context, string) (bool, error) { return f.exists, nil }
+func (f *fakeStore) DeleteByCode(context.Context, string) error       { return f.deleteErr }
 
 func newEngine(store service.URLStore) *gin.Engine {
 	gin.SetMode(gin.TestMode)

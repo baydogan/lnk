@@ -7,6 +7,7 @@ import (
 	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type URLHandler struct {
@@ -26,13 +27,29 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.svc.ShortenURL(c.Request.Context(), &req)
+	resp, err := h.svc.ShortenURL(c.Request.Context(), &req, callerID(c))
 	if err != nil {
 		respondError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, resp)
+}
+
+func callerID(c *gin.Context) *bson.ObjectID {
+	if v, ok := c.Get("user_id"); ok {
+		if id, ok := v.(bson.ObjectID); ok {
+			return &id
+		}
+	}
+	return nil
+}
+
+func callerScope(c *gin.Context) *bson.ObjectID {
+	if b, ok := c.Get("is_admin"); ok && b == true {
+		return nil
+	}
+	return callerID(c)
 }
 
 func (h *URLHandler) RedirectURL(c *gin.Context) {
@@ -55,7 +72,7 @@ func (h *URLHandler) RedirectURL(c *gin.Context) {
 }
 
 func (h *URLHandler) DeleteURL(c *gin.Context) {
-	if err := h.svc.DeleteURL(c.Request.Context(), c.Param("code")); err != nil {
+	if err := h.svc.DeleteURL(c.Request.Context(), c.Param("code"), callerScope(c)); err != nil {
 		respondError(c, err)
 		return
 	}
@@ -63,7 +80,7 @@ func (h *URLHandler) DeleteURL(c *gin.Context) {
 }
 
 func (h *URLHandler) ListURLs(c *gin.Context) {
-	urls, err := h.svc.ListURLs(c.Request.Context())
+	urls, err := h.svc.ListURLs(c.Request.Context(), callerScope(c))
 	if err != nil {
 		respondError(c, err)
 		return
@@ -72,7 +89,7 @@ func (h *URLHandler) ListURLs(c *gin.Context) {
 }
 
 func (h *URLHandler) StatsURL(c *gin.Context) {
-	u, err := h.svc.GetURL(c.Request.Context(), c.Param("code"))
+	u, err := h.svc.GetURL(c.Request.Context(), c.Param("code"), callerScope(c))
 	if err != nil {
 		respondError(c, err)
 		return

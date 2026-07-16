@@ -1,5 +1,10 @@
 package models
 
+const (
+	ModeSingle = "single"
+	ModeMulti  = "multi"
+)
+
 type ServerConfig struct {
 	Mode      string `yaml:"mode"`
 	BaseURL   string `yaml:"base_url"`

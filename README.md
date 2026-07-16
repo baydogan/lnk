@@ -13,8 +13,9 @@ Two binaries share the same `internal/*` packages:
 ## Features
 
 - Shorten URLs with optional custom `--alias` and `--expires` TTL.
-- Root-level redirects (`base_url/<code>`) resolved by code **or** alias; every hit is
-  counted (302, never cached).
+- Root-level redirects (`base_url/<code>`) resolved by code **or** alias. Redirects use
+  302 (not 301), so browsers and CDNs don't cache them and every click reaches the server
+  to be counted.
 - QR codes for any short link — terminal ANSI or PNG (`-o file.png`), generated on demand.
 - API-key auth (`Authorization: Bearer`) on `/api/v1`; the redirect and `/health` stay public.
 - Split config: server settings and client credentials never collide.

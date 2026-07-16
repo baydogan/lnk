@@ -3,11 +3,12 @@ package server
 import (
 	"github.com/baydogan/lnk/internal/handler"
 	"github.com/baydogan/lnk/internal/middleware"
+	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *handler.URLHandler, authSvc *service.AuthService) *gin.Engine {
+func NewRouter(mode string, h *handler.URLHandler, userHandler *handler.UserHandler, authSvc *service.AuthService, userSvc *service.UserService) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -18,11 +19,26 @@ func NewRouter(h *handler.URLHandler, authSvc *service.AuthService) *gin.Engine 
 
 	api := router.Group("/api/v1")
 	api.Use(middleware.Auth(authSvc))
+	if mode == models.ModeMulti {
+		api.Use(middleware.WithRole(userSvc))
+	}
 	{
 		api.POST("/shorten", h.ShortenURL)
 		api.DELETE("/:code", h.DeleteURL)
 		api.GET("/urls", h.ListURLs)
 		api.GET("/urls/:code", h.StatsURL)
+
+		if mode == models.ModeMulti {
+			api.GET("/me", userHandler.Whoami)
+
+			users := api.Group("/users")
+			users.Use(middleware.AdminOnly(userSvc))
+			{
+				users.POST("", userHandler.CreateUser)
+				users.GET("", userHandler.ListUsers)
+				users.DELETE("/:username", userHandler.DeleteUser)
+			}
+		}
 	}
 
 	router.NoRoute(h.RedirectURL)

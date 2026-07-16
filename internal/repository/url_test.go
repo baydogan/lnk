@@ -112,22 +112,35 @@ func TestIncrementClickCount(t *testing.T) {
 	}
 }
 
-func TestGetAllURLs(t *testing.T) {
+func TestGetURLsByOwner(t *testing.T) {
 	clearCollection(t, "urls")
 	repo := NewURLRepository()
 	ctx := context.Background()
 
-	for _, c := range []string{"a", "b", "c"} {
-		if err := repo.CreateURL(ctx, &models.URL{Code: c, OriginalURL: "https://x.com"}); err != nil {
+	alice := bson.NewObjectID()
+	for _, c := range []string{"a", "b"} {
+		if err := repo.CreateURL(ctx, &models.URL{Code: c, OriginalURL: "https://x.com", UserID: &alice}); err != nil {
 			t.Fatalf("CreateURL: %v", err)
 		}
 	}
-	all, err := repo.GetAllURLs(ctx)
+	if err := repo.CreateURL(ctx, &models.URL{Code: "c", OriginalURL: "https://x.com"}); err != nil {
+		t.Fatalf("CreateURL: %v", err)
+	}
+
+	all, err := repo.GetURLsByOwner(ctx, nil)
 	if err != nil {
-		t.Fatalf("GetAllURLs: %v", err)
+		t.Fatalf("GetURLsByOwner(nil): %v", err)
 	}
 	if len(all) != 3 {
-		t.Fatalf("len = %d, want 3", len(all))
+		t.Fatalf("all = %d, want 3", len(all))
+	}
+
+	mine, err := repo.GetURLsByOwner(ctx, &alice)
+	if err != nil {
+		t.Fatalf("GetURLsByOwner(alice): %v", err)
+	}
+	if len(mine) != 2 {
+		t.Fatalf("alice = %d, want 2", len(mine))
 	}
 }
 

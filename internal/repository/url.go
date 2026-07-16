@@ -64,8 +64,12 @@ func (r *URLRepository) IncrementClickCount(ctx context.Context, code string) er
 	return err
 }
 
-func (r *URLRepository) GetAllURLs(ctx context.Context) ([]models.URL, error) {
-	cursor, err := r.col.Find(ctx, bson.M{})
+func (r *URLRepository) GetURLsByOwner(ctx context.Context, ownerID *bson.ObjectID) ([]models.URL, error) {
+	filter := bson.M{}
+	if ownerID != nil {
+		filter = bson.M{"user_id": *ownerID}
+	}
+	cursor, err := r.col.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

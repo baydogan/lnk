@@ -51,11 +51,20 @@ func (f *fakeURLStore) IncrementClickCount(_ context.Context, code string) error
 	return f.incErr
 }
 
-func (f *fakeURLStore) GetAllURLs(_ context.Context) ([]models.URL, error) {
+func (f *fakeURLStore) GetURLsByOwner(_ context.Context, ownerID *bson.ObjectID) ([]models.URL, error) {
 	if f.listErr != nil {
 		return nil, f.listErr
 	}
-	return f.all, nil
+	if ownerID == nil {
+		return f.all, nil
+	}
+	var out []models.URL
+	for _, u := range f.all {
+		if u.UserID != nil && *u.UserID == *ownerID {
+			out = append(out, u)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeURLStore) CodeExists(_ context.Context, code string) (bool, error) {
@@ -71,16 +80,18 @@ func (f *fakeURLStore) DeleteByCode(_ context.Context, code string) error {
 }
 
 type fakeKeyStore struct {
-	count   int64
-	created []*models.APIKey
-	byHash  map[string]*models.APIKey
-	touched []bson.ObjectID
+	count        int64
+	created      []*models.APIKey
+	byHash       map[string]*models.APIKey
+	touched      []bson.ObjectID
+	deletedUsers []bson.ObjectID
 
 	countErr  error
 	createErr error
 	getErr    error
 	touchErr  error
 	idxErr    error
+	deleteErr error
 }
 
 func newFakeKeyStore() *fakeKeyStore {
@@ -116,4 +127,74 @@ func (f *fakeKeyStore) GetByHash(_ context.Context, hash string) (*models.APIKey
 func (f *fakeKeyStore) TouchLastUsed(_ context.Context, id bson.ObjectID) error {
 	f.touched = append(f.touched, id)
 	return f.touchErr
+}
+
+func (f *fakeKeyStore) DeleteByUserID(_ context.Context, id bson.ObjectID) error {
+	f.deletedUsers = append(f.deletedUsers, id)
+	return f.deleteErr
+}
+
+type fakeUserStore struct {
+	created []*models.User
+	byName  map[string]*models.User
+	deleted []string
+
+	createErr error
+	getErr    error
+	listErr   error
+}
+
+func newFakeUserStore() *fakeUserStore {
+	return &fakeUserStore{byName: map[string]*models.User{}}
+}
+
+func (f *fakeUserStore) Create(_ context.Context, u *models.User) error {
+	if f.createErr != nil {
+		return f.createErr
+	}
+	u.ID = bson.NewObjectID()
+	f.created = append(f.created, u)
+	f.byName[u.Username] = u
+	return nil
+}
+
+func (f *fakeUserStore) GetByUsername(_ context.Context, username string) (*models.User, error) {
+	if f.getErr != nil {
+		return nil, f.getErr
+	}
+	if u, ok := f.byName[username]; ok {
+		return u, nil
+	}
+	return nil, errs.ErrNotFound
+}
+
+func (f *fakeUserStore) GetByID(_ context.Context, id bson.ObjectID) (*models.User, error) {
+	for _, u := range f.byName {
+		if u.ID == id {
+			return u, nil
+		}
+	}
+	return nil, errs.ErrNotFound
+}
+
+func (f *fakeUserStore) List(_ context.Context) ([]models.User, error) {
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
+	out := make([]models.User, 0, len(f.created))
+	for _, u := range f.created {
+		out = append(out, *u)
+	}
+	return out, nil
+}
+
+func (f *fakeUserStore) EnsureIndexes(_ context.Context) error { return nil }
+
+func (f *fakeUserStore) DeleteByUsername(_ context.Context, username string) error {
+	if _, ok := f.byName[username]; !ok {
+		return errs.ErrNotFound
+	}
+	delete(f.byName, username)
+	f.deleted = append(f.deleted, username)
+	return nil
 }

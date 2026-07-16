@@ -9,6 +9,7 @@ import (
 
 	"github.com/baydogan/lnk/internal/errs"
 	"github.com/baydogan/lnk/internal/models"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestAPIKeyCreateAndGetByHash(t *testing.T) {
@@ -114,6 +115,31 @@ func TestAPIKeyOneKeyPerNilUser(t *testing.T) {
 	err := repo.Create(ctx, &models.APIKey{KeyHash: "h2", Prefix: "p2"})
 	if !errors.Is(err, errs.ErrAlreadyExists) {
 		t.Fatalf("second nil-user key err = %v, want ErrAlreadyExists (uniq_user_id)", err)
+	}
+}
+
+func TestAPIKeyDeleteByUserID(t *testing.T) {
+	clearCollection(t, "api_keys")
+	repo := NewAPIKeyRepository()
+	ctx := context.Background()
+
+	uid := bson.NewObjectID()
+	other := bson.NewObjectID()
+	if err := repo.Create(ctx, &models.APIKey{KeyHash: "h1", Prefix: "p1", UserID: &uid}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if err := repo.Create(ctx, &models.APIKey{KeyHash: "h2", Prefix: "p2", UserID: &other}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	if err := repo.DeleteByUserID(ctx, uid); err != nil {
+		t.Fatalf("DeleteByUserID: %v", err)
+	}
+	if _, err := repo.GetByHash(ctx, "h1"); !errors.Is(err, errs.ErrNotFound) {
+		t.Fatalf("deleted user's key still present, err = %v", err)
+	}
+	if _, err := repo.GetByHash(ctx, "h2"); err != nil {
+		t.Fatalf("other user's key should remain: %v", err)
 	}
 }
 

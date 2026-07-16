@@ -27,14 +27,36 @@ func Run() error {
 		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
-	authSvc := service.NewAuthService(repository.NewAPIKeyRepository())
-	urlHandler := handler.NewHTTPHandler(service.NewURLService(repository.NewURLRepository(), cfg.BaseURL))
+	ctx := context.Background()
 
-	if err := authSvc.EnsureIndexes(context.Background()); err != nil {
+	keyRepo := repository.NewAPIKeyRepository()
+	userRepo := repository.NewUserRepository()
+	authSvc := service.NewAuthService(keyRepo)
+	userSvc := service.NewUserService(userRepo, keyRepo)
+	urlHandler := handler.NewHTTPHandler(service.NewURLService(repository.NewURLRepository(), cfg.BaseURL))
+	userHandler := handler.NewUserHandler(userSvc)
+
+	if err := authSvc.EnsureIndexes(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure indexes")
 	}
 
-	pt, created, err := authSvc.EnsureAdminKey(context.Background())
+	var (
+		pt      string
+		created bool
+		err     error
+	)
+	if cfg.Mode == models.ModeMulti {
+		if err = userSvc.EnsureIndexes(ctx); err != nil {
+			logger.Fatal().Err(err).Msg("failed to ensure user indexes")
+		}
+		admin := cfg.Admin
+		if admin == "" {
+			admin = "admin"
+		}
+		pt, created, err = userSvc.EnsureAdmin(ctx, admin)
+	} else {
+		pt, created, err = authSvc.EnsureAdminKey(ctx)
+	}
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to ensure admin key")
 	}
@@ -43,7 +65,7 @@ func Run() error {
 		fmt.Printf("\nAdmin API key generated. Run:\n\n  lnk login --server %s --api-key %s\n\n", cfg.BaseURL, pt)
 	}
 
-	router := NewRouter(urlHandler, authSvc)
+	router := NewRouter(cfg.Mode, urlHandler, userHandler, authSvc, userSvc)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
