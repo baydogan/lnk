@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/client"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
@@ -31,7 +31,7 @@ var userCreateCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var res models.CreateUserResponse
+		var res domain.CreateUserResponse
 		if err := json.Unmarshal(body, &res); err != nil {
 			return fmt.Errorf("bad response (status %d): %w", status, err)
 		}
@@ -56,7 +56,7 @@ var userListCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var users []models.User
+		var users []domain.User
 		if err := json.Unmarshal(body, &users); err != nil {
 			return fmt.Errorf("bad response (status %d): %w", status, err)
 		}
@@ -120,7 +120,7 @@ var userWhoamiCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var u models.User
+		var u domain.User
 		if err := json.Unmarshal(body, &u); err != nil {
 			return fmt.Errorf("bad response (status %d): %w", status, err)
 		}

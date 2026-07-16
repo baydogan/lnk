@@ -1,9 +1,5 @@
 .PHONY: dev up down reset install run test test-race cover test-integration test-all
 
-dev:
-	docker compose up -d mongodb redis
-	go run ./cmd/lnkd/
-
 up:
 	docker compose up -d --build
 

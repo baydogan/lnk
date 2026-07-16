@@ -5,8 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/baydogan/lnk/internal/errs"
-	"github.com/baydogan/lnk/internal/models"
+	"github.com/baydogan/lnk/domain"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,8 +50,8 @@ func ServerConfigExists() (string, bool, error) {
 	return path, true, nil
 }
 
-func ReadServerConfig() (models.ServerConfig, bool, error) {
-	var cfg models.ServerConfig
+func ReadServerConfig() (domain.ServerConfig, bool, error) {
+	var cfg domain.ServerConfig
 	path, err := ServerConfigPath()
 	if err != nil {
 		return cfg, false, err
@@ -70,7 +69,7 @@ func ReadServerConfig() (models.ServerConfig, bool, error) {
 	return cfg, true, nil
 }
 
-func WriteServerConfig(cfg *models.ServerConfig) (string, error) {
+func WriteServerConfig(cfg *domain.ServerConfig) (string, error) {
 	path, err := ServerConfigPath()
 	if err != nil {
 		return "", err
@@ -98,8 +97,8 @@ func ClientConfigPath() (string, error) {
 	return filepath.Join(dir, clientFileName), nil
 }
 
-func ReadClientConfig() (models.ClientConfig, error) {
-	var cfg models.ClientConfig
+func ReadClientConfig() (domain.ClientConfig, error) {
+	var cfg domain.ClientConfig
 	path, err := ClientConfigPath()
 	if err != nil {
 		return cfg, err
@@ -107,7 +106,7 @@ func ReadClientConfig() (models.ClientConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, errs.ErrNotLoggedIn
+			return cfg, domain.ErrNotLoggedIn
 		}
 		return cfg, err
 	}
@@ -117,7 +116,7 @@ func ReadClientConfig() (models.ClientConfig, error) {
 	return cfg, nil
 }
 
-func WriteClientConfig(cfg *models.ClientConfig) (string, error) {
+func WriteClientConfig(cfg *domain.ClientConfig) (string, error) {
 	path, err := ClientConfigPath()
 	if err != nil {
 		return "", err
@@ -144,7 +143,7 @@ func RemoveClientConfig() (string, error) {
 	}
 	if err := os.Remove(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return path, errs.ErrNotLoggedIn
+			return path, domain.ErrNotLoggedIn
 		}
 		return "", err
 	}

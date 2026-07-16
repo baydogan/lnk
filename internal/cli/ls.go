@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/client"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ var lsCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var urls []models.URLResponse
+		var urls []domain.URLResponse
 		if err := json.Unmarshal(body, &urls); err != nil {
 			return fmt.Errorf("bad response (status %d): %w", status, err)
 		}

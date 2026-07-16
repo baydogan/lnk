@@ -1,8 +1,8 @@
 package cli
 
 import (
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/config"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/baydogan/lnk/internal/setup"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ var initCmd = &cobra.Command{
 	Short: "Interactively configure the lnk server",
 	Long:  "Launches a TUI wizard that picks the deployment mode and writes server config.\nAny value passed as a flag is used directly and not prompted.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := &models.ServerConfig{}
+		cfg := &domain.ServerConfig{}
 		cfg.Mode, _ = cmd.Flags().GetString("mode")
 		cfg.BaseURL, _ = cmd.Flags().GetString("base-url")
 		cfg.Admin, _ = cmd.Flags().GetString("admin")

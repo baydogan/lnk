@@ -3,9 +3,9 @@ package cli
 import (
 	"errors"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/client"
 	"github.com/baydogan/lnk/internal/config"
-	"github.com/baydogan/lnk/internal/errs"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ func requireClient(cmd *cobra.Command, args []string) error {
 			url = cfg.Server
 		}
 		token = cfg.APIKey
-	} else if !errors.Is(err, errs.ErrNotLoggedIn) {
+	} else if !errors.Is(err, domain.ErrNotLoggedIn) {
 		return err
 	}
 

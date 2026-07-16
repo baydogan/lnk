@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/config"
-	"github.com/baydogan/lnk/internal/errs"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ var logoutCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path, err := config.RemoveClientConfig()
 		if err != nil {
-			if errors.Is(err, errs.ErrNotLoggedIn) {
+			if errors.Is(err, domain.ErrNotLoggedIn) {
 				fmt.Println("not logged in — nothing to remove")
 				return nil
 			}

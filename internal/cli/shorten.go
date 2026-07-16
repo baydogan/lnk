@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/baydogan/lnk/domain"
 	"github.com/baydogan/lnk/internal/client"
-	"github.com/baydogan/lnk/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var shortenCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: requireClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		req := models.ShortenRequest{
+		req := domain.ShortenRequest{
 			URL:     args[0],
 			Alias:   shortenAlias,
 			Expires: shortenExpires,
@@ -39,7 +39,7 @@ var shortenCmd = &cobra.Command{
 			return apiError(body, status)
 		}
 
-		var resp models.ShortenResponse
+		var resp domain.ShortenResponse
 		if err := json.Unmarshal(body, &resp); err != nil {
 			return fmt.Errorf("server error (status %d): %w", status, err)
 		}
